@@ -18,6 +18,7 @@
 #include <Debug.h>
 #include <core/Functions.h>
 
+#include <kenshi/CharBody.h>
 #include <kenshi/Character.h>
 #include <kenshi/Damages.h>
 #include <kenshi/Enums.h>
@@ -30,6 +31,7 @@
 #include <kenshi/PlayerInterface.h>
 #include <kenshi/RaceData.h>
 #include <kenshi/SaveManager.h>
+#include <kenshi/Tasker.h>
 #include <kenshi/gui/ManagementScreen.h>
 #include <kenshi/util/hand.h>
 
@@ -146,9 +148,40 @@ namespace
 			DebugLog("KenshiAchievements[debug]: " + msg);
 	}
 
+	// Nocaute/assassinato furtivo não fere a vítima (não passa por addWound nem preenche
+	// lastGuyWhoDefeatedMe): procura quem do grupo está executando a tarefa com ela como alvo.
+	Character* findStealthAttacker(Character* victim, bool verbose)
+	{
+		if (!ou || !ou->player)
+			return NULL;
+		std::string victimKey = handleKey(victim);
+		lektor<Character*>& squad = ou->player->playerCharacters;
+		for (uint32_t i = 0; i < squad.size(); ++i)
+		{
+			Character* c = squad[i];
+			CharBody* body = c ? c->getBody() : NULL;
+			Tasker* task = body ? body->getCurrentAction() : NULL;
+			if (!task)
+				continue;
+			TaskType t = task->key();
+			if (t != STEALTH_KNOCKOUT && t != STEALTH_KILL)
+				continue;
+			bool sameTarget = task->subject.toString() == victimKey;
+			if (verbose)
+				dbg("  tarefa furtiva de " + describe(c) + (sameTarget ? " -> nessa vítima" : " -> em outro alvo"));
+			if (sameTarget)
+				return c;
+		}
+		return NULL;
+	}
+
 	// Quem do jogador derrubou a vítima? NULL se não foi o jogador.
 	Character* findPlayerAttacker(Character* victim, bool verbose = true)
 	{
+		Character* stealth = findStealthAttacker(victim, verbose);
+		if (stealth)
+			return stealth;
+
 		Character* c = victim->lastGuyWhoDefeatedMe.getCharacter();
 		if (verbose)
 			dbg("  lastGuyWhoDefeatedMe = " + describe(c));

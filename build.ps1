@@ -33,13 +33,13 @@ New-Item -ItemType Directory -Force $obj | Out-Null
 # Fontes em UTF-8 SEM BOM: o cl de 2010 lê como ANSI e repassa os bytes UTF-8 intactos
 # pras strings, que é o que o MyGUI espera.
 $sources = Get-ChildItem (Join-Path $root "src") -Filter *.cpp | ForEach-Object { $_.FullName }
-& $cl /nologo /c /O2 /MD /EHsc /W3 /Zi /GS `
+& $cl /nologo /c /O2 /GL /MD /EHsc /W3 /Zi /GS `
     /DNDEBUG /DWIN32 /D_WINDOWS /DUNICODE /D_UNICODE /D_USRDLL /DBOOST_ALL_NO_LIB /D_CRT_SECURE_NO_WARNINGS `
     "/Fo$obj\\" "/Fd$obj\\vc100.pdb" $sources
 if ($LASTEXITCODE -ne 0) { throw "Compilação falhou" }
 
 $objs = Get-ChildItem $obj -Filter *.obj | ForEach-Object { $_.FullName }
-& $link /nologo /DLL /MACHINE:X64 /DEBUG /OPT:REF /OPT:ICF `
+& $link /nologo /DLL /MACHINE:X64 /LTCG /DEBUG /OPT:REF /OPT:ICF `
     "/OUT:$modDir\KenshiAchievements.dll" "/PDB:$obj\KenshiAchievements.pdb" "/IMPLIB:$obj\KenshiAchievements.lib" `
     $objs kenshilib.lib MyGUIEngine_x64.lib OgreMain_x64.lib libboost_thread-vc100-mt-1_60.lib libboost_system-vc100-mt-1_60.lib `
     kernel32.lib user32.lib winmm.lib

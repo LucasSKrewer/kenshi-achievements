@@ -441,13 +441,14 @@ namespace
 		}
 	}
 
-	template <typename T>
-	void hook(T target, void* detour, void* original, const char* name)
-	{
-		if (KenshiLib::SUCCESS != KenshiLib::AddHook(KenshiLib::GetRealAddress(target), detour, (void**)original))
-			ErrorLog(std::string("KenshiAchievements: falhou hook de ") + name);
-	}
 }
+
+// Tem que ser macro: GetRealAddress precisa receber &Classe::funcao direto no ponto de uso.
+// Passando por template/função, o ponteiro para membro vira cópia e o endereço cai dentro
+// desta DLL em vez do stub exportado pelo KenshiLib (assert "Incorrect address").
+#define HOOK(target, detour, original) \
+	if (KenshiLib::SUCCESS != KenshiLib::AddHook(KenshiLib::GetRealAddress(target), (void*)(detour), (void**)(original))) \
+		ErrorLog("KenshiAchievements: falhou hook de " #target)
 
 __declspec(dllexport) void startPlugin()
 {
@@ -462,12 +463,12 @@ __declspec(dllexport) void startPlugin()
 	o << "KenshiAchievements: " << n << " conquistas carregadas";
 	DebugLog(o.str());
 
-	hook(&Character::declareDead, (void*)&declareDead_hook, &declareDead_orig, "Character::declareDead");
-	hook(&MedicalSystem::knockout, (void*)&knockout_hook, &knockout_orig, "MedicalSystem::knockout");
-	hook(&Character::_NV_hitByMeleeAttack, (void*)&hitByMelee_hook, &hitByMelee_orig, "Character::hitByMeleeAttack");
-	hook(&Character::iShotYou, (void*)&iShotYou_hook, &iShotYou_orig, "Character::iShotYou");
-	hook(&FactionManager::saveGameState, (void*)&saveGameState_hook, &saveGameState_orig, "FactionManager::saveGameState");
-	hook(&GameWorld::loadAllPlatoons, (void*)&loadAllPlatoons_hook, &loadAllPlatoons_orig, "GameWorld::loadAllPlatoons");
-	hook(&SaveManager::newGame, (void*)&newGame_hook, &newGame_orig, "SaveManager::newGame");
-	hook(&GameWorld::_NV_mainLoop_GPUSensitiveStuff, (void*)&mainLoop_hook, &mainLoop_orig, "GameWorld::mainLoop_GPUSensitiveStuff");
+	HOOK(&Character::declareDead, &declareDead_hook, &declareDead_orig);
+	HOOK(&MedicalSystem::knockout, &knockout_hook, &knockout_orig);
+	HOOK(&Character::_NV_hitByMeleeAttack, &hitByMelee_hook, &hitByMelee_orig);
+	HOOK(&Character::iShotYou, &iShotYou_hook, &iShotYou_orig);
+	HOOK(&FactionManager::saveGameState, &saveGameState_hook, &saveGameState_orig);
+	HOOK(&GameWorld::loadAllPlatoons, &loadAllPlatoons_hook, &loadAllPlatoons_orig);
+	HOOK(&SaveManager::newGame, &newGame_hook, &newGame_orig);
+	HOOK(&GameWorld::_NV_mainLoop_GPUSensitiveStuff, &mainLoop_hook, &mainLoop_orig);
 }

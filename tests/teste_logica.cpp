@@ -66,6 +66,27 @@ int main(int argc, char** argv)
 	check(achs.find("Poeira Assentada  (2/25)") != std::string::npos, "Dust Bandits contou kills traduzidas (2/25)");
 	check(achs.find("Sucateiro  (1/10)") != std::string::npos, "*Skeleton* pegou o Screamer MKII (1/10)");
 
+	// Save de versão antiga: o mesmo personagem em duas chaves (handles) diferentes
+	{
+		std::map<std::string, int> ints;
+		std::map<std::string, std::string> strs;
+		ints["total.k"] = 11;
+		ints["c.k:handleA"] = 9;
+		ints["c.k:handleB"] = 2;
+		strs["c.n:handleA"] = "The Arbiter";
+		strs["c.n:handleB"] = "The Arbiter";
+		Stats::importFrom(ints, strs);
+		std::string antes = Stats::statsReport("uid-arbiter", "The Arbiter");
+		check(antes.find("The Arbiter\n   Kills: 11") != std::string::npos, "selecionado com entradas antigas soma pelo nome (11)");
+		Stats::recordKill("uid-arbiter", "The Arbiter", "Shek", "Dust Bandits");
+		std::string depois = Stats::statsReport("uid-arbiter", "The Arbiter");
+		size_t first = depois.find("The Arbiter:");
+		check(first != std::string::npos && depois.find("The Arbiter:", first + 1) == std::string::npos,
+			"duplicado juntado numa entrada só");
+		check(depois.find("The Arbiter:  Kills: 12") != std::string::npos, "contagem juntada = 12");
+		Stats::popUnlocks();
+	}
+
 	printf("\n===== aba Estatísticas (The Arbiter selecionado) =====\n%s", stats.c_str());
 	printf("===== aba Conquistas =====\n%s", achs.c_str());
 	printf("===== nenhum selecionado =====\n%s", Stats::statsReport("", "").c_str());

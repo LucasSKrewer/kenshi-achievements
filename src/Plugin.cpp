@@ -25,6 +25,7 @@
 #include <kenshi/GameData.h>
 #include <kenshi/GameDataManager.h>
 #include <kenshi/GameWorld.h>
+#include <kenshi/InstanceID.h>
 #include <kenshi/Globals.h>
 #include <kenshi/MedicalSystem.h>
 #include <kenshi/PlayerInterface.h>
@@ -83,6 +84,27 @@ namespace
 		return o->getHandle().toString();
 	}
 
+	// ID estável do personagem: o InstanceID é o que o próprio save usa. O handle muda ao
+	// recarregar o save, e o mesmo personagem aparecia duplicado no painel (#4).
+	std::string charKey(Character* c)
+	{
+		InstanceID* id = c->getInstanceID();
+		if (id && !id->uid.empty())
+			return id->uid;
+		return handleKey(c);
+	}
+
+	// KO sem atacante definido na hora: espera o jogo preencher lastGuyWhoDefeatedMe (#2).
+	const DWORD KO_WAIT_MS = 3000;
+	struct PendingKO
+	{
+		hand victim;
+		DWORD tick;
+	};
+	std::vector<PendingKO> pendingKOs;
+
+	void countTakedown(Character* victim, Character* attacker, bool kill);
+
 	std::string raceName(Character* c)
 	{
 		RaceData* r = c->getRace();
@@ -128,22 +150,25 @@ namespace
 	}
 
 	// Quem do jogador derrubou a vítima? NULL se não foi o jogador.
-	Character* findPlayerAttacker(Character* victim)
+	Character* findPlayerAttacker(Character* victim, bool verbose = true)
 	{
 		Character* c = victim->lastGuyWhoDefeatedMe.getCharacter();
-		dbg("  lastGuyWhoDefeatedMe = " + describe(c));
+		if (verbose)
+			dbg("  lastGuyWhoDefeatedMe = " + describe(c));
 		if (c && c->isPlayerCharacter())
 			return c;
 
 		std::map<std::string, LastHit>::iterator it = lastPlayerHit.find(handleKey(victim));
 		if (it == lastPlayerHit.end())
 		{
-			dbg("  nenhum golpe do jogador lembrado nessa vítima");
+			if (verbose)
+				dbg("  nenhum golpe do jogador lembrado nessa vítima");
 			return NULL;
 		}
 		std::ostringstream age;
 		age << (GetTickCount() - it->second.tick) << " ms atrás";
-		dbg("  último golpe do jogador: " + describe(it->second.attacker.getCharacter()) + ", " + age.str());
+		if (verbose)
+			dbg("  último golpe do jogador: " + describe(it->second.attacker.getCharacter()) + ", " + age.str());
 		if (GetTickCount() - it->second.tick <= HIT_MEMORY_MS)
 		{
 			c = it->second.attacker.getCharacter();
@@ -187,31 +212,80 @@ namespace
 		Character* attacker = findPlayerAttacker(victim);
 		if (!attacker)
 		{
+			if (!kill)
+			{
+				// O jogo costuma preencher lastGuyWhoDefeatedMe logo depois do knockout(): tenta de novo no mainLoop
+				PendingKO p;
+				p.victim = victim->getHandle();
+				p.tick = GetTickCount();
+				pendingKOs.push_back(p);
+				dbg("  atacante ainda não definido: esperando até 3 s");
+				return;
+			}
 			dbg("  NÃO contado: atacante do jogador não identificado");
 			return;
 		}
-		dbg("  CONTADO para " + describe(attacker));
+		countTakedown(victim, attacker, kill);
+		if (kill)
+			lastPlayerHit.erase(victimKey);
+	}
 
-		std::string key = handleKey(attacker);
+	// Chamar com o lock seguro.
+	void countTakedown(Character* victim, Character* attacker, bool kill)
+	{
+		std::string key = charKey(attacker);
+		dbg("  CONTADO para " + describe(attacker) + " id=" + key);
 		std::string name = attacker->getName();
 		if (kill)
 			Stats::recordKill(key, name, Lang::toEnglish(raceName(victim)), Lang::toEnglish(factionName(victim)));
 		else
 			Stats::recordKO(key, name, Lang::toEnglish(raceName(victim)), Lang::toEnglish(factionName(victim)));
+	}
 
-		if (kill)
-			lastPlayerHit.erase(victimKey);
+	// Chamado a cada frame (thread principal): resolve KOs que ficaram sem atacante.
+	void resolvePendingKOs()
+	{
+		if (pendingKOs.empty())
+			return;
+		boost::lock_guard<boost::mutex> g(lock);
+		DWORD now = GetTickCount();
+		for (size_t i = 0; i < pendingKOs.size();)
+		{
+			Character* victim = pendingKOs[i].victim.getCharacter();
+			Character* attacker = victim ? findPlayerAttacker(victim, false) : NULL;
+			bool expired = now - pendingKOs[i].tick > KO_WAIT_MS;
+			if (attacker || expired || !victim)
+			{
+				if (attacker)
+				{
+					std::ostringstream o;
+					o << "KO de " << describe(victim) << " resolvido após " << (now - pendingKOs[i].tick) << " ms";
+					dbg(o.str());
+					countTakedown(victim, attacker, false);
+				}
+				else if (victim)
+				{
+					dbg("KO de " + describe(victim) + " NÃO contado: ninguém do jogador em 3 s (lastGuyWhoDefeatedMe = "
+						+ describe(victim->lastGuyWhoDefeatedMe.getCharacter()) + ")");
+				}
+				pendingKOs.erase(pendingKOs.begin() + i);
+			}
+			else
+			{
+				++i;
+			}
+		}
 	}
 
 	void rememberHit(Character* victim, Character* attacker)
 	{
-		if (debug && debugHits < 30 && victim && attacker)
-		{
-			++debugHits;
-			dbg("golpe: " + describe(attacker) + " -> " + describe(victim));
-		}
 		if (!victim || !attacker || !attacker->isPlayerCharacter() || victim->isPlayerCharacter())
 			return;
+		if (debug && debugHits < 60)
+		{
+			++debugHits;
+			dbg("golpe do jogador: " + describe(attacker) + " -> " + describe(victim));
+		}
 		boost::lock_guard<boost::mutex> g(lock);
 		LastHit h;
 		h.attacker = attacker->getHandle();
@@ -226,6 +300,7 @@ namespace
 		lastPlayerHit.clear();
 		countedDeaths.clear();
 		lastKO.clear();
+		pendingKOs.clear();
 	}
 
 	// ---------- hooks de combate ----------
@@ -260,6 +335,17 @@ namespace
 	{
 		rememberHit(self, who);
 		return hitByMelee_orig(self, dir, damage, who, attack, comboID);
+	}
+
+	// Todo ferimento (melee, projétil, animal) passa por addWound com o atacante: fonte mais
+	// confiável de "quem bateu" do que hitByMeleeAttack/iShotYou.
+	GameData* (*addWound_orig)(MedicalSystem*, bool, CutDirection, Damages&, int&, RootObject*, AttackDirection::Enum&, Harpoon*) = NULL;
+	GameData* addWound_hook(MedicalSystem* self, bool lowBlow, CutDirection area, Damages& damage, int& material,
+		RootObject* attacker, AttackDirection::Enum& attackDirection, Harpoon* harpoon)
+	{
+		if (attacker && self->me)
+			rememberHit(self->me, attacker->getHandle().getCharacter());
+		return addWound_orig(self, lowBlow, area, damage, material, attacker, attackDirection, harpoon);
 	}
 
 	bool (*iShotYou_orig)(Character*, Character*, Harpoon*, bool) = NULL;
@@ -385,7 +471,7 @@ namespace
 		Character* sel = (ou && ou->player) ? ou->player->selectedCharacter.getCharacter() : NULL;
 		if (sel)
 		{
-			selKey = handleKey(sel);
+			selKey = charKey(sel);
 			selName = sel->getName();
 		}
 		boost::lock_guard<boost::mutex> g(lock);
@@ -565,6 +651,8 @@ namespace
 			dbg("mainLoop ativo (UI ok)");
 		}
 
+		resolvePendingKOs();
+
 		MyGUI::Gui* gui = MyGUI::Gui::getInstancePtr();
 		if (!gui)
 			return;
@@ -676,6 +764,7 @@ __declspec(dllexport) void startPlugin()
 	HOOK(&MedicalSystem::knockout, &knockout_hook, &knockout_orig);
 	HOOK(&Character::_NV_hitByMeleeAttack, &hitByMelee_hook, &hitByMelee_orig);
 	HOOK(&Character::iShotYou, &iShotYou_hook, &iShotYou_orig);
+	HOOK(&MedicalSystem::addWound, &addWound_hook, &addWound_orig);
 	HOOK(&FactionManager::saveGameState, &saveGameState_hook, &saveGameState_orig);
 	HOOK(&GameWorld::loadAllPlatoons, &loadAllPlatoons_hook, &loadAllPlatoons_orig);
 	HOOK(&SaveManager::newGame, &newGame_hook, &newGame_orig);

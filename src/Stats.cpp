@@ -169,8 +169,28 @@ namespace Stats
 			return m.compare(0, 5, "race_") == 0 || m.compare(0, 8, "faction_") == 0;
 		}
 
+		// Junta em `key` as entradas antigas com o mesmo nome e outra chave (versões antigas usavam o
+		// handle, que muda ao recarregar o save, e o mesmo personagem aparecia duplicado).
+		void mergeSameName(const std::string& key, const std::string& name)
+		{
+			for (std::map<std::string, CharStats>::iterator it = chars.begin(); it != chars.end();)
+			{
+				if (it->first != key && it->second.name == name)
+				{
+					chars[key].kills += it->second.kills;
+					chars[key].kos += it->second.kos;
+					chars.erase(it++);
+				}
+				else
+				{
+					++it;
+				}
+			}
+		}
+
 		void record(bool kill, const std::string& key, const std::string& name, const std::string& race, const std::string& faction)
 		{
+			mergeSameName(key, name);
 			CharStats& c = chars[key];
 			c.name = name;
 			if (kill)
@@ -376,7 +396,21 @@ namespace Stats
 			CharStats sel;
 			std::map<std::string, CharStats>::const_iterator it = chars.find(selectedKey);
 			if (it != chars.end())
+			{
 				sel = it->second;
+			}
+			else
+			{
+				// Entrada de versão antiga (chave = handle): soma pelo nome
+				for (it = chars.begin(); it != chars.end(); ++it)
+				{
+					if (it->second.name == selectedName)
+					{
+						sel.kills += it->second.kills;
+						sel.kos += it->second.kos;
+					}
+				}
+			}
 			o << selectedName << "\n";
 			o << "   " << statLine(sel.kills, sel.kos) << "\n";
 		}

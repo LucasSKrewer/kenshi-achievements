@@ -35,7 +35,7 @@ O mod segue o idioma escolhido no Kenshi (`language=` no `settings.cfg`):
 
 **Steam:** assine na [Steam Workshop](https://steamcommunity.com/sharedfiles/filedetails/?id=3809336824) e siga os passos 1 e 3 abaixo.
 
-**Manual (GOG etc.):**
+**Manual (GOG etc.):** baixe o zip em [Releases](https://github.com/LucasSKrewer/kenshi-achievements/releases/latest).
 
 1. Tenha o [RE_Kenshi](https://github.com/BFrizzleFoShizzle/RE_Kenshi/releases) **v0.3.5+** instalado
    (o menu principal mostra "RE_Kenshi v0.3.5").

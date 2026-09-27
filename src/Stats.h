@@ -58,6 +58,9 @@ namespace Stats
 	void exportTo(std::map<std::string, int>& ints, std::map<std::string, std::string>& strs);
 	void importFrom(const std::map<std::string, int>& ints, const std::map<std::string, std::string>& strs);
 
-	// Texto do painel de estatísticas.
-	std::string report();
+	// Aba "Estatísticas": personagem selecionado (key/name vazios = nenhum), total do grupo e lista.
+	std::string statsReport(const std::string& selectedKey, const std::string& selectedName);
+
+	// Aba "Conquistas": concluídas e pendentes com progresso.
+	std::string achievementsReport();
 }

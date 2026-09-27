@@ -1,8 +1,11 @@
 # Kenshi Achievements
 
 > **EN:** An [RE_Kenshi](https://github.com/BFrizzleFoShizzle/RE_Kenshi) plugin that tracks **kills** and
-> **knockouts** per squad member and unlocks configurable **achievements** (popup + sound, F6 stats panel, configurable).
-> Stats are stored inside your save. Single-player. Docs below are in Portuguese.
+> **knockouts** per squad member and unlocks configurable **achievements** (popup + sound, F6 panel with
+> Statistics / Achievements tabs). Stats are stored inside your save. Single-player.
+> **Works in any game language**: the UI follows Kenshi's language (`lang/<language>.txt`, English fallback —
+> translations welcome!) and translated race/faction names are mapped back to English using the game's own
+> dictionary, so `achievements.txt` is the same for everyone. Docs below are in Portuguese.
 
 Plugin [RE_Kenshi](https://github.com/BFrizzleFoShizzle/RE_Kenshi) que conta **kills** e **KOs**
 feitos pelo seu grupo e libera **conquistas** configuráveis. Só single-player.
@@ -12,9 +15,21 @@ feitos pelo seu grupo e libera **conquistas** configuráveis. Só single-player.
 - Contagem por personagem, por raça e por facção da vítima; mortes e KOs separados.
 - Os contadores ficam **dentro do save** (um `GameData` próprio, tipo `4242`); cada save tem os seus.
 - Conquista liberada → janela no topo da tela + linha no log de mensagens + som.
-- **F6** abre/fecha o painel com o placar e o progresso das conquistas (tecla configurável com `@tecla`).
+- **F6** abre/fecha o painel (tecla configurável com `@key`), com duas abas:
+  - **Estatísticas** — o personagem selecionado no topo, depois o total do grupo e a lista por personagem;
+  - **Conquistas** — concluídas e em andamento, com progresso (ex.: `(3/10)`).
 - Conquistas em `mod/KenshiAchievements/achievements.txt` — formato explicado no próprio arquivo.
-- Som configurável (`@som`): padrão é a notificação "construção concluída" do próprio Kenshi; dá pra usar outro som do jogo, o `achievement.wav` incluso ou qualquer `.wav` seu.
+- Som configurável (`@sound`): padrão é a notificação "construção concluída" do próprio Kenshi; dá pra usar outro som do jogo, o `achievement.wav` incluso ou qualquer `.wav` seu.
+
+### Idiomas
+
+O mod segue o idioma escolhido no Kenshi (`language=` no `settings.cfg`):
+
+- **Textos do mod** vêm de `lang/<idioma>.txt` (ex.: `pt_BR.txt`, `de_DE.txt`), por cima do `lang/en.txt`.
+  Pra traduzir, copie o `en.txt` com o código do idioma e traduza — o que faltar fica em inglês. PRs são bem-vindos.
+- **Nomes de raça/facção** chegam traduzidos do jogo ("Bandidos da Poeira"); o mod usa o dicionário do próprio
+  Kenshi (`locale/<idioma>/gamedata.po`) pra voltar ao inglês ("Dust Bandits"). Por isso o `achievements.txt`
+  usa sempre os nomes em inglês e vale pra qualquer idioma. Dá pra listar alternativas com vírgula.
 
 ## Instalar (jogador)
 
@@ -30,8 +45,11 @@ Quando alguém morre (`Character::declareDead`) ou cai inconsciente (`MedicalSys
 1. `vítima->lastGuyWhoDefeatedMe`, se for personagem do jogador;
 2. senão, o último personagem do jogador que acertou a vítima (melee ou projétil) nos últimos 30 s.
 
-Vítimas do próprio grupo não contam. Uma morte conta uma vez só por vítima; um KO conta na
-transição consciente → inconsciente (a mesma pessoa pode ser nocauteada de novo depois).
+Vítimas do próprio grupo não contam. Uma morte conta uma vez só por vítima; um KO conta na chamada de
+`knockout()` com a vítima de pé (o jogo só marca "inconsciente" depois), com intervalo mínimo de 10 s
+por vítima — a mesma pessoa pode ser nocauteada de novo depois.
+
+`@debug = 1` no `achievements.txt` registra cada kill/KO/golpe no `RE_Kenshi_log.txt`.
 
 ## Compilar
 
@@ -69,13 +87,22 @@ O `KenshiAchievements.vcxproj` continua aí para quem tiver Visual Studio com o 
 
 Logs do plugin: `RE_Kenshi_log.txt` na pasta do jogo (prefixo `KenshiAchievements:`).
 
-## A validar no jogo
+### Testes (sem o jogo)
 
-- `lastGuyWhoDefeatedMe` já está preenchido quando `knockout`/`declareDead` rodam? (se não, o fallback de golpes cobre)
-- `Character::iShotYou`: `this` é a vítima e `attacker` o atirador — confirmar pelo log.
-- O `GameData` tipo 4242 sobrevive ao save/load (mesma técnica do exemplo `WorldStates`).
-- Skins MyGUI `Kenshi_WindowCX`, `Kenshi_EditBox`, `Kenshi_TextboxStandardText` e o layer `Overlapped`.
-- Nomes exatos de raças/facções usados no `achievements.txt`.
+```
+powershell -ExecutionPolicy Bypass -File tests\rodar-testes.ps1
+```
+
+Compila `tests/teste_logica.cpp` com o mesmo VC++ 2010 e testa o dicionário de nomes, os textos por idioma,
+a contagem, as conquistas e o texto das duas abas.
+
+## Validado no jogo
+
+- Plugin carrega, hooks instalam, save/load dos contadores (tipo 4242) funciona.
+- Morte: `lastGuyWhoDefeatedMe` já vem preenchido em `declareDead` e atribui ao personagem certo.
+- Com o Genesis ativo (nenhum mod da Workshop tem DLL; raças/facções conferidas).
+
+Bugs e ideias: [issues](https://github.com/LucasSKrewer/kenshi-achievements/issues).
 
 ## Licença
 

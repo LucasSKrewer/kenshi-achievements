@@ -53,10 +53,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\Lang.cpp" />
     <ClCompile Include="src\Plugin.cpp" />
     <ClCompile Include="src\Stats.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\Lang.h" />
     <ClInclude Include="src\Stats.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
@@ -66,6 +68,10 @@
       <ModFiles Include="$(MSBuildThisFileDirectory)mod\KenshiAchievements\*.dll;$(MSBuildThisFileDirectory)mod\KenshiAchievements\*.mod;$(MSBuildThisFileDirectory)mod\KenshiAchievements\*.json;$(MSBuildThisFileDirectory)mod\KenshiAchievements\*.txt;$(MSBuildThisFileDirectory)mod\KenshiAchievements\*.wav" />
     </ItemGroup>
     <Copy SourceFiles="@(ModFiles)" DestinationFolder="$(KENSHI_DIR)\mods\KenshiAchievements" SkipUnchangedFiles="true" />
+    <ItemGroup>
+      <LangFiles Include="$(MSBuildThisFileDirectory)mod\KenshiAchievements\lang\*.txt" />
+    </ItemGroup>
+    <Copy SourceFiles="@(LangFiles)" DestinationFolder="$(KENSHI_DIR)\mods\KenshiAchievements\lang" SkipUnchangedFiles="true" />
     <Message Importance="high" Text="Mod instalado em $(KENSHI_DIR)\mods\KenshiAchievements" />
   </Target>
 </Project>

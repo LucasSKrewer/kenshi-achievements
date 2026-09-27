@@ -54,5 +54,6 @@ if (-not $NoInstall) {
     $dest = Join-Path $KenshiDir "mods\KenshiAchievements"
     New-Item -ItemType Directory -Force $dest | Out-Null
     Copy-Item "$modDir\*" $dest -Include *.dll, *.mod, *.json, *.txt, *.wav -Force
+    Copy-Item "$modDir\lang" $dest -Recurse -Force
     Write-Host "Instalado em $dest"
 }

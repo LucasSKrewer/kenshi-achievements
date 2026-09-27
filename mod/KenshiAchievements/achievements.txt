@@ -1,53 +1,56 @@
-# Conquistas do Kenshi Achievements — edite à vontade, é lido quando o jogo abre.
+# Kenshi Achievements — edit freely, read when the game starts.
 #
-# Formato:  id | métrica | alvo | título | descrição
+# Format:  id | metric | target | title | description
 #
-# Métricas:
-#   kills, kos, takedowns (kills + KOs)        -> total do seu grupo
-#   char_kills, char_kos                       -> o melhor personagem sozinho
-#   race_kills:<Raça>, race_kos:<Raça>         -> ex.: race_kills:Shek, race_kills:*Beak Thing
-#   faction_kills:<Facção>, faction_kos:<Facção> -> ex.: faction_kills:*Holy Nation*
+# Metrics:
+#   kills, kos, takedowns (kills + KOs)            -> whole squad
+#   char_kills, char_kos                           -> best single character
+#   race_kills:<Race>, race_kos:<Race>             -> e.g. race_kills:Shek, race_kills:*Beak Thing
+#   faction_kills:<Faction>, faction_kos:<Faction> -> e.g. faction_kills:*Holy Nation*
 #
-# Raça/facção usam o nome do jogo em inglês (maiúsculas não importam). `*` casa qualquer
-# trecho: útil com mods como o Genesis, que criam variantes ("*Skeleton*" pega Skeleton MKI,
-# MKII, Screamer...). O `id` não pode mudar depois de liberado, senão a conquista volta a
-# ficar travada nos saves antigos.
+# Race/faction use the game's ENGLISH names, in any game language: translated names are mapped
+# back to English using the game's own dictionary (locale/<lang>/gamedata.po). Case doesn't matter.
+#   *   matches anything — useful with mods like Genesis that add variants ("*Skeleton*" = Skeleton MKI, MKII...)
+#   ,   separates alternatives — "Dust Bandits,Hungry Bandits"
+#
+# Title/description here are the English default. Translations go in lang/<language>.txt
+# (<id>.title / <id>.desc). Never change an `id` after release: saves track unlocks by id.
 
-# Som ao liberar uma conquista:
-#   @som = Notifications:Building_Complete -> som do próprio Kenshi (padrão), respeita o volume do jogo.
-#       Outras notificações do jogo: Notifications:Thing_Complete, Notifications:Raid,
+# Sound when an achievement unlocks:
+#   @sound = Notifications:Building_Complete -> Kenshi's own sound (default), follows the game volume.
+#       Other game notifications: Notifications:Thing_Complete, Notifications:Raid,
 #       Notifications:Bounty_Fulfilled, Notifications:New_Biome
-#       Outros eventos: Character_Unlock_Success, Stats_Open, Tech_Open, Building_Confirm
-#   @som = achievement.wav                 -> qualquer .wav nesta pasta (o sino incluso, ou o seu)
-#   @som = nenhum                          -> sem som
-@som = Notifications:Building_Complete
+#       Other events: Character_Unlock_Success, Stats_Open, Tech_Open, Building_Confirm
+#   @sound = achievement.wav                 -> any .wav in this folder (the bundled chime, or your own)
+#   @sound = none                            -> silent
+@sound = Notifications:Building_Complete
 
-# Tecla do painel de estatísticas: F1-F12, uma letra/número, ou NUM0-NUM9.
-# Não abre com Ctrl/Shift/Alt apertado nem enquanto você digita num campo de texto.
-# Evite as teclas que o Kenshi já usa: F1-F5, F7-F9 (F9 = quickload), I, M, C, T, B, Y, R...
-@tecla = F6
+# Stats panel key: F1-F12, a letter/digit, or NUM0-NUM9.
+# Won't open with Ctrl/Shift/Alt held or while typing in a text field.
+# Avoid keys Kenshi already uses: F1-F5, F7-F9 (F9 = quickload), I, M, C, T, B, Y, R...
+@key = F6
 
-# Diagnóstico: 1 registra cada kill/KO/golpe no RE_Kenshi_log.txt (deixe 0 no dia a dia).
+# Diagnostics: 1 logs every kill/KO/hit to RE_Kenshi_log.txt (keep 0 for normal play).
 @debug = 1
 
-first_blood   | kills     | 1    | Primeiro Sangue      | Mate seu primeiro inimigo.
-killer_10     | kills     | 10   | Mãos Sujas           | 10 mortes.
-killer_100    | kills     | 100  | Açougueiro           | 100 mortes.
-killer_500    | kills     | 500  | Ceifador             | 500 mortes.
-killer_1000   | kills     | 1000 | Lenda de Kenshi      | 1000 mortes.
+first_blood   | kills      | 1    | First Blood          | Kill your first enemy.
+killer_10     | kills      | 10   | Dirty Hands          | 10 kills.
+killer_100    | kills      | 100  | Butcher              | 100 kills.
+killer_500    | kills      | 500  | Reaper               | 500 kills.
+killer_1000   | kills      | 1000 | Legend of Kenshi     | 1000 kills.
 
-first_ko      | kos       | 1    | Boa Noite            | Nocauteie seu primeiro inimigo.
-ko_50         | kos       | 50   | Nocauteador          | 50 nocautes.
-ko_250        | kos       | 250  | Punhos de Ferro      | 250 nocautes.
+first_ko      | kos        | 1    | Good Night           | Knock out your first enemy.
+ko_50         | kos        | 50   | Knockout Artist      | 50 knockouts.
+ko_250        | kos        | 250  | Iron Fists           | 250 knockouts.
 
-takedown_1000 | takedowns | 1000 | Ninguém Fica de Pé   | 1000 kills + KOs somados.
+takedown_1000 | takedowns  | 1000 | Nobody Stays Standing | 1000 kills + knockouts combined.
 
-solo_50       | char_kills | 50  | Exército de Um Só    | Um único personagem com 50 mortes.
-solo_ko_100   | char_kos  | 100  | Especialista         | Um único personagem com 100 nocautes.
+solo_50       | char_kills | 50   | One-Man Army         | A single character with 50 kills.
+solo_ko_100   | char_kos   | 100  | Specialist           | A single character with 100 knockouts.
 
-beak_hunter   | race_kills:*Beak Thing  | 5  | Caçador de Bicudos   | Mate 5 Beak Things.
-shek_slayer   | race_kills:Shek         | 25 | Quebra-Chifres       | Mate 25 Shek.
-skeleton_bane | race_kills:*Skeleton*   | 10 | Sucateiro            | Destrua 10 esqueletos.
+beak_hunter   | race_kills:*Beak Thing      | 5  | Beak Hunter        | Kill 5 Beak Things.
+shek_slayer   | race_kills:Shek             | 25 | Horn Breaker       | Kill 25 Shek.
+skeleton_bane | race_kills:*Skeleton*       | 10 | Scrapper           | Destroy 10 skeletons.
 
-heretic       | faction_kills:*Holy Nation* | 50 | Herege              | Mate 50 membros da Holy Nation.
-bandit_bane   | faction_kills:Dust Bandits | 25  | Poeira Assentada     | Mate 25 Dust Bandits.
+heretic       | faction_kills:*Holy Nation* | 50 | Heretic            | Kill 50 members of the Holy Nation.
+bandit_bane   | faction_kills:Dust Bandits  | 25 | Dust Settled       | Kill 25 Dust Bandits.

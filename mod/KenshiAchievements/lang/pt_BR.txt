@@ -1,0 +1,56 @@
+# Kenshi Achievements — Português (Brasil). Usado quando o jogo está com language=pt_BR.
+
+panel.title = Kills & Conquistas
+tab.stats = Estatísticas
+tab.achievements = Conquistas
+
+stats.line = Kills: {kills}    KOs: {kos}
+stats.no_selection = (nenhum personagem selecionado)
+stats.squad = --- Total do grupo ---
+stats.per_char = --- Por personagem ---
+stats.none = (ninguém ainda)
+
+ach.summary = Concluídas: {done}/{total}
+ach.done = --- Concluídas ---
+ach.pending = --- Em andamento ---
+
+toast.title = Conquista desbloqueada!
+log.owner = Conquista
+
+first_blood.title = Primeiro Sangue
+first_blood.desc = Mate seu primeiro inimigo.
+killer_10.title = Mãos Sujas
+killer_10.desc = 10 mortes.
+killer_100.title = Açougueiro
+killer_100.desc = 100 mortes.
+killer_500.title = Ceifador
+killer_500.desc = 500 mortes.
+killer_1000.title = Lenda de Kenshi
+killer_1000.desc = 1000 mortes.
+
+first_ko.title = Boa Noite
+first_ko.desc = Nocauteie seu primeiro inimigo.
+ko_50.title = Nocauteador
+ko_50.desc = 50 nocautes.
+ko_250.title = Punhos de Ferro
+ko_250.desc = 250 nocautes.
+
+takedown_1000.title = Ninguém Fica de Pé
+takedown_1000.desc = 1000 kills + nocautes somados.
+
+solo_50.title = Exército de Um Só
+solo_50.desc = Um único personagem com 50 mortes.
+solo_ko_100.title = Especialista
+solo_ko_100.desc = Um único personagem com 100 nocautes.
+
+beak_hunter.title = Caçador de Bicudos
+beak_hunter.desc = Mate 5 Beak Things.
+shek_slayer.title = Quebra-Chifres
+shek_slayer.desc = Mate 25 Shek.
+skeleton_bane.title = Sucateiro
+skeleton_bane.desc = Destrua 10 esqueletos.
+
+heretic.title = Herege
+heretic.desc = Mate 50 membros da Nação Sagrada.
+bandit_bane.title = Poeira Assentada
+bandit_bane.desc = Mate 25 Bandidos da Poeira.

@@ -1,0 +1,22 @@
+# Kenshi Achievements — English texts (base for every language).
+# To translate: copy this file to lang/<language>.txt using Kenshi's code from settings.cfg
+# (language=...), e.g. de_DE.txt, fr_FR.txt, ru_RU.txt, zh_CN.txt. Missing keys fall back to English.
+# Achievement texts: <id>.title / <id>.desc (the defaults live in achievements.txt).
+# {name} placeholders are filled in by the mod; \n is a line break.
+
+panel.title = Kills & Achievements
+tab.stats = Statistics
+tab.achievements = Achievements
+
+stats.line = Kills: {kills}    KOs: {kos}
+stats.no_selection = (no character selected)
+stats.squad = --- Squad total ---
+stats.per_char = --- Per character ---
+stats.none = (nobody yet)
+
+ach.summary = Completed: {done}/{total}
+ach.done = --- Completed ---
+ach.pending = --- In progress ---
+
+toast.title = Achievement unlocked!
+log.owner = Achievement

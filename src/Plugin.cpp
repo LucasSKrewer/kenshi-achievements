@@ -12,6 +12,7 @@
 //   SaveManager::newGame            -> zera
 //   GameWorld::mainLoop_GPUSensitiveStuff -> UI (MyGUI só pode ser tocado nessa thread)
 
+#include "Lang.h"
 #include "Stats.h"
 
 #include <Debug.h>
@@ -32,6 +33,7 @@
 #include <kenshi/gui/ManagementScreen.h>
 #include <kenshi/util/hand.h>
 
+#include <mygui/MyGUI_Button.h>
 #include <mygui/MyGUI_EditBox.h>
 #include <mygui/MyGUI_Gui.h>
 #include <mygui/MyGUI_InputManager.h>
@@ -193,9 +195,9 @@ namespace
 		std::string key = handleKey(attacker);
 		std::string name = attacker->getName();
 		if (kill)
-			Stats::recordKill(key, name, raceName(victim), factionName(victim));
+			Stats::recordKill(key, name, Lang::toEnglish(raceName(victim)), Lang::toEnglish(factionName(victim)));
 		else
-			Stats::recordKO(key, name, raceName(victim), factionName(victim));
+			Stats::recordKO(key, name, Lang::toEnglish(raceName(victim)), Lang::toEnglish(factionName(victim)));
 
 		if (kill)
 			lastPlayerHit.erase(victimKey);
@@ -342,7 +344,11 @@ namespace
 
 	MyGUI::Window* panel = NULL;
 	MyGUI::EditBox* panelText = NULL;
+	MyGUI::Button* tabStats = NULL;
+	MyGUI::Button* tabAchievements = NULL;
+	int currentTab = 0; // 0 = estatísticas, 1 = conquistas (lembrado entre aberturas)
 	bool panelCloseRequested = false;
+	DWORD panelRefreshedAt = 0;
 
 	void onPanelButton(MyGUI::Window* sender, const std::string& name)
 	{
@@ -350,7 +356,40 @@ namespace
 		if (name == "close")
 			panelCloseRequested = true;
 	}
-	DWORD panelRefreshedAt = 0;
+
+	void selectTab(int tab)
+	{
+		currentTab = tab;
+		if (tabStats)
+			tabStats->setStateSelected(tab == 0);
+		if (tabAchievements)
+			tabAchievements->setStateSelected(tab == 1);
+		panelRefreshedAt = 0; // força refresh no próximo frame
+	}
+
+	void onTabClick(MyGUI::Widget* sender)
+	{
+		selectTab(sender == tabAchievements ? 1 : 0);
+	}
+
+	// Texto da aba atual. Chamar na thread principal (lê o personagem selecionado).
+	std::string buildReport()
+	{
+		if (currentTab == 1)
+		{
+			boost::lock_guard<boost::mutex> g(lock);
+			return Stats::achievementsReport();
+		}
+		std::string selKey, selName;
+		Character* sel = (ou && ou->player) ? ou->player->selectedCharacter.getCharacter() : NULL;
+		if (sel)
+		{
+			selKey = handleKey(sel);
+			selName = sel->getName();
+		}
+		boost::lock_guard<boost::mutex> g(lock);
+		return Stats::statsReport(selKey, selName);
+	}
 	bool keyWasDown = false;
 
 	// Som da conquista (@som no achievements.txt):
@@ -364,8 +403,8 @@ namespace
 
 	void loadSound(const std::string& dir)
 	{
-		std::string s = Stats::setting("som", "Notifications:Building_Complete");
-		if (s == "nenhum")
+		std::string s = Stats::setting("sound", Stats::setting("som", "Notifications:Building_Complete"));
+		if (s == "nenhum" || s == "none")
 			return;
 		if (s.size() > 4 && _stricmp(s.c_str() + s.size() - 4, ".wav") == 0)
 		{
@@ -424,7 +463,7 @@ namespace
 
 		toastWindow = gui->createWidgetReal<MyGUI::Window>("Kenshi_WindowCX", 0.35f, 0.04f, 0.30f, 0.12f,
 			MyGUI::Align::Default, "Overlapped", "KenshiAchievementsToast");
-		toastWindow->setCaption("Conquista desbloqueada!");
+		toastWindow->setCaption(Lang::tr("toast.title", "Achievement unlocked!"));
 		MyGUI::TextBox* text = toastWindow->getClientWidget()->createWidgetReal<MyGUI::TextBox>(
 			"Kenshi_TextboxStandardText", 0.03f, 0.05f, 0.94f, 0.9f, MyGUI::Align::Stretch);
 		text->setTextAlign(MyGUI::Align::Center);
@@ -439,18 +478,32 @@ namespace
 			gui->destroyWidget(panel);
 			panel = NULL;
 			panelText = NULL;
+			tabStats = NULL;
+			tabAchievements = NULL;
 			return;
 		}
 		panel = gui->createWidgetReal<MyGUI::Window>("Kenshi_WindowCX", 0.30f, 0.15f, 0.40f, 0.65f,
 			MyGUI::Align::Default, "Overlapped", "KenshiAchievementsPanel");
-		panel->setCaption("Kills & Conquistas");
-		panelText = panel->getClientWidget()->createWidgetReal<MyGUI::EditBox>(
-			"Kenshi_EditBox", 0.02f, 0.02f, 0.96f, 0.96f, MyGUI::Align::Stretch);
+		panel->setCaption(Lang::tr("panel.title", "Kills & Achievements"));
+		MyGUI::Widget* client = panel->getClientWidget();
+
+		// Abas: dois botões no topo, o da aba atual fica "selecionado"
+		tabStats = client->createWidgetReal<MyGUI::Button>("Kenshi_Button1", 0.02f, 0.01f, 0.47f, 0.07f,
+			MyGUI::Align::Top | MyGUI::Align::HStretch);
+		tabStats->setCaption(Lang::tr("tab.stats", "Statistics"));
+		tabStats->eventMouseButtonClick += MyGUI::newDelegate(onTabClick);
+		tabAchievements = client->createWidgetReal<MyGUI::Button>("Kenshi_Button1", 0.51f, 0.01f, 0.47f, 0.07f,
+			MyGUI::Align::Top | MyGUI::Align::HStretch);
+		tabAchievements->setCaption(Lang::tr("tab.achievements", "Achievements"));
+		tabAchievements->eventMouseButtonClick += MyGUI::newDelegate(onTabClick);
+
+		panelText = client->createWidgetReal<MyGUI::EditBox>(
+			"Kenshi_EditBox", 0.02f, 0.10f, 0.96f, 0.88f, MyGUI::Align::Stretch);
 		panelText->setEditReadOnly(true);
 		panelText->setEditMultiLine(true);
 		panelText->setEditWordWrap(true);
 		panel->eventWindowButtonPressed += MyGUI::newDelegate(onPanelButton);
-		panelRefreshedAt = 0; // força refresh
+		selectTab(currentTab);
 	}
 
 	// "F6", "F10", "L", "7", "NUM5" -> virtual-key. 0 se não reconhecer.
@@ -510,13 +563,9 @@ namespace
 			return;
 
 		std::vector<Stats::Unlock> unlocks;
-		std::string report;
-		bool refresh = panelText && GetTickCount() - panelRefreshedAt >= 1000;
 		{
 			boost::lock_guard<boost::mutex> g(lock);
 			unlocks = Stats::popUnlocks();
-			if (refresh)
-				report = Stats::report();
 
 			// limpa golpes velhos
 			DWORD now = GetTickCount();
@@ -538,7 +587,7 @@ namespace
 				t.body += "\n(" + unlocks[i].who + ")";
 			toastQueue.push_back(t);
 			dbg("conquista liberada: " + unlocks[i].title);
-			log("Conquista", unlocks[i].title + " - " + unlocks[i].description);
+			log(Lang::tr("log.owner", "Achievement"), unlocks[i].title + " - " + unlocks[i].description);
 		}
 		if (!unlocks.empty())
 			playUnlockSound();
@@ -553,20 +602,13 @@ namespace
 
 		bool keyDown = (GetAsyncKeyState(panelKey) & 0x8000) != 0;
 		if (keyDown && !keyWasDown && gameHasFocus() && !modifierHeld() && !typingInTextBox())
-		{
 			togglePanel(gui);
-			refresh = panelText != NULL;
-			if (refresh)
-			{
-				boost::lock_guard<boost::mutex> g(lock);
-				report = Stats::report();
-			}
-		}
 		keyWasDown = keyDown;
 
-		if (refresh && panelText)
+		// Atualiza 1x por segundo (ou já, se trocou de aba / acabou de abrir)
+		if (panelText && GetTickCount() - panelRefreshedAt >= 1000)
 		{
-			panelText->setCaption(report);
+			panelText->setCaption(buildReport());
 			panelRefreshedAt = GetTickCount();
 		}
 	}
@@ -591,17 +633,31 @@ __declspec(dllexport) void startPlugin()
 
 	debug = Stats::setting("debug", "0") == "1";
 	if (debug)
-		DebugLog("KenshiAchievements: modo debug ligado");
+		DebugLog("KenshiAchievements: debug mode on");
 
-	std::string keyName = Stats::setting("tecla", "F6");
+	// Idioma do jogo -> textos do mod + nomes de raça/facção de volta pro inglês (#3)
+	char cwd[MAX_PATH] = { 0 };
+	GetCurrentDirectoryA(MAX_PATH, cwd);
+	std::string gameDir = std::string(cwd) + "\\";
+	std::string lang = Lang::gameLanguage(gameDir);
+	std::string used = Lang::loadTexts(dir, lang);
+	int names = (lang.empty() || lang.compare(0, 2, "en") == 0) ? 0
+		: Lang::loadGameNames(gameDir + "locale\\" + lang + "\\gamedata.po");
+	std::ostringstream lo;
+	lo << "KenshiAchievements: game language '" << (lang.empty() ? "?" : lang) << "', texts '" << used
+		<< "', " << names << " race/faction names mapped to English";
+	DebugLog(lo.str());
+
+	// @key (ou @tecla, nome antigo)
+	std::string keyName = Stats::setting("key", Stats::setting("tecla", "F6"));
 	int key = parseKey(keyName);
 	if (key)
 		panelKey = key;
 	else
-		ErrorLog("KenshiAchievements: @tecla desconhecida '" + keyName + "', usando F6");
+		ErrorLog("KenshiAchievements: unknown @key '" + keyName + "', using F6");
 
 	std::ostringstream o;
-	o << "KenshiAchievements: " << n << " conquistas carregadas";
+	o << "KenshiAchievements: " << n << " achievements loaded";
 	DebugLog(o.str());
 
 	HOOK(&Character::declareDead, &declareDead_hook, &declareDead_orig);

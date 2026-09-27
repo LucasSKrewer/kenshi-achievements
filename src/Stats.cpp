@@ -1,4 +1,5 @@
 #include "Stats.h"
+#include "Lang.h"
 
 #include <algorithm>
 #include <cctype>
@@ -65,14 +66,42 @@ namespace Stats
 			return *s != '\0' && tolower((unsigned char)*pat) == tolower((unsigned char)*s) && globMatch(pat + 1, s + 1);
 		}
 
-		// Soma todas as entradas cujo nome casa com o padrão.
+		// Soma as entradas cujo nome casa com o padrão. Vírgula separa alternativas:
+		// "Dust Bandits,Bandidos da Poeira" ou "*Skeleton*,Soldierbot".
 		int lookup(const std::map<std::string, int>& m, const std::string& pattern)
 		{
+			std::vector<std::string> alts;
+			std::stringstream ss(pattern);
+			std::string part;
+			while (std::getline(ss, part, ','))
+			{
+				part = trim(part);
+				if (!part.empty())
+					alts.push_back(part);
+			}
 			int total = 0;
 			for (std::map<std::string, int>::const_iterator it = m.begin(); it != m.end(); ++it)
-				if (globMatch(pattern.c_str(), it->first.c_str()))
-					total += it->second;
+			{
+				for (size_t i = 0; i < alts.size(); ++i)
+				{
+					if (globMatch(alts[i].c_str(), it->first.c_str()))
+					{
+						total += it->second;
+						break;
+					}
+				}
+			}
 			return total;
+		}
+
+		std::string title(const Achievement& a)
+		{
+			return Lang::tr(a.id + ".title", a.title);
+		}
+
+		std::string description(const Achievement& a)
+		{
+			return Lang::tr(a.id + ".desc", a.description);
 		}
 
 		// Valor atual da métrica. Para char_*, `who` recebe o nome do melhor personagem.
@@ -118,8 +147,8 @@ namespace Stats
 					if (announce)
 					{
 						Unlock u;
-						u.title = a.title;
-						u.description = a.description;
+						u.title = title(a);
+						u.description = description(a);
 						u.who = who;
 						pending.push_back(u);
 					}
@@ -176,7 +205,7 @@ namespace Stats
 		std::ifstream in(path.c_str());
 		if (!in)
 		{
-			errors.push_back("não abriu " + path);
+			errors.push_back("could not open " + path);
 			return 0;
 		}
 
@@ -197,7 +226,7 @@ namespace Stats
 			{
 				size_t eq = line.find('=');
 				if (eq == std::string::npos)
-					errors.push_back("linha " + itos(lineNo) + ": esperado @chave = valor");
+					errors.push_back("line " + itos(lineNo) + ": expected @key = value");
 				else
 					settings[trim(line.substr(1, eq - 1))] = trim(line.substr(eq + 1));
 				continue;
@@ -209,10 +238,10 @@ namespace Stats
 			while (std::getline(ss, part, '|'))
 				f.push_back(trim(part));
 
-			std::string where = "linha " + itos(lineNo) + ": ";
+			std::string where = "line " + itos(lineNo) + ": ";
 			if (f.size() < 4)
 			{
-				errors.push_back(where + "esperado id | métrica | alvo | título | descrição");
+				errors.push_back(where + "expected id | metric | target | title | description");
 				continue;
 			}
 
@@ -231,13 +260,13 @@ namespace Stats
 			a.description = f.size() > 4 ? f[4] : "";
 
 			if (!isKnownMetric(a.metric))
-				errors.push_back(where + "métrica desconhecida '" + a.metric + "'");
+				errors.push_back(where + "unknown metric '" + a.metric + "'");
 			else if (needsArg(a.metric) && a.arg.empty())
-				errors.push_back(where + a.metric + " precisa de argumento (ex.: " + a.metric + ":Shek)");
+				errors.push_back(where + a.metric + " needs an argument (e.g. " + a.metric + ":Shek)");
 			else if (a.target <= 0)
-				errors.push_back(where + "alvo precisa ser > 0");
+				errors.push_back(where + "target must be > 0");
 			else if (!ids.insert(a.id).second)
-				errors.push_back(where + "id repetido '" + a.id + "'");
+				errors.push_back(where + "duplicate id '" + a.id + "'");
 			else
 				achievements.push_back(a);
 		}
@@ -327,36 +356,82 @@ namespace Stats
 		checkAchievements(false);
 	}
 
-	std::string report()
+	namespace
+	{
+		std::string statLine(int kills, int kos)
+		{
+			return Lang::fill(Lang::fill(Lang::tr("stats.line", "Kills: {kills}    KOs: {kos}"), "kills", kills), "kos", kos);
+		}
+	}
+
+	std::string statsReport(const std::string& selectedKey, const std::string& selectedName)
 	{
 		std::ostringstream o;
-		o << "Kills: " << totalKills << "    KOs: " << totalKOs << "\n\n";
+		if (selectedName.empty())
+		{
+			o << Lang::tr("stats.no_selection", "(no character selected)") << "\n";
+		}
+		else
+		{
+			CharStats sel;
+			std::map<std::string, CharStats>::const_iterator it = chars.find(selectedKey);
+			if (it != chars.end())
+				sel = it->second;
+			o << selectedName << "\n";
+			o << "   " << statLine(sel.kills, sel.kos) << "\n";
+		}
+
+		o << "\n" << Lang::tr("stats.squad", "--- Squad total ---") << "\n";
+		o << "   " << statLine(totalKills, totalKOs) << "\n";
 
 		std::vector<CharStats> list;
 		for (std::map<std::string, CharStats>::const_iterator it = chars.begin(); it != chars.end(); ++it)
 			list.push_back(it->second);
 		std::sort(list.begin(), list.end(), byKillsDesc);
 
-		o << "--- Por personagem ---\n";
+		o << "\n" << Lang::tr("stats.per_char", "--- Per character ---") << "\n";
 		if (list.empty())
-			o << "(ninguém ainda)\n";
+			o << Lang::tr("stats.none", "(nobody yet)") << "\n";
 		for (size_t i = 0; i < list.size(); ++i)
-			o << list[i].name << ":  " << list[i].kills << " kills, " << list[i].kos << " KOs\n";
+			o << list[i].name << ":  " << statLine(list[i].kills, list[i].kos) << "\n";
+		return o.str();
+	}
 
-		o << "\n--- Conquistas (" << unlocked.size() << "/" << achievements.size() << ") ---\n";
-		for (size_t i = 0; i < achievements.size(); ++i)
+	std::string achievementsReport()
+	{
+		std::ostringstream o;
+		o << Lang::fill(Lang::fill(Lang::tr("ach.summary", "Completed: {done}/{total}"),
+			"done", (int)unlocked.size()), "total", (int)achievements.size()) << "\n\n";
+
+		// Concluídas primeiro, depois as pendentes com progresso
+		for (int pass = 0; pass < 2; ++pass)
 		{
-			const Achievement& a = achievements[i];
-			if (unlocked.count(a.id))
+			o << (pass == 0 ? Lang::tr("ach.done", "--- Completed ---") : Lang::tr("ach.pending", "--- In progress ---")) << "\n";
+			int shown = 0;
+			for (size_t i = 0; i < achievements.size(); ++i)
 			{
-				o << "[X] " << a.title << "\n";
+				const Achievement& a = achievements[i];
+				bool done = unlocked.count(a.id) != 0;
+				if (done != (pass == 0))
+					continue;
+				++shown;
+				if (done)
+				{
+					o << "[X] " << title(a) << "\n";
+				}
+				else
+				{
+					std::string who;
+					int v = (std::min)(metricValue(a, who), a.target);
+					o << "[ ] " << title(a) << "  (" << v << "/" << a.target << ")\n";
+				}
+				std::string d = description(a);
+				if (!d.empty())
+					o << "      " << d << "\n";
 			}
-			else
-			{
-				std::string who;
-				int v = metricValue(a, who);
-				o << "[ ] " << a.title << "  (" << (std::min)(v, a.target) << "/" << a.target << ")\n";
-			}
+			if (!shown)
+				o << "   -\n";
+			o << "\n";
 		}
 		return o.str();
 	}

@@ -1,0 +1,56 @@
+[h1]Kenshi Achievements[/h1]
+Tracks every [b]kill[/b] and [b]knockout[/b] your squad makes, per character, and unlocks [b]achievements[/b] with an in-game popup and sound. Press [b]F6[/b] for the stats panel.
+
+[h2]⚠️ REQUIRES RE_KENSHI[/h2]
+This is an [b]RE_Kenshi plugin[/b] (a DLL). Without RE_Kenshi it does nothing.
+[list]
+[*][b][url=https://www.nexusmods.com/kenshi/mods/847]RE_Kenshi v0.3.5 or newer[/url][/b] ([url=https://github.com/BFrizzleFoShizzle/RE_Kenshi/releases]GitHub[/url]) — install it first, then subscribe here and enable [b]KenshiAchievements[/b] in the launcher.
+[*]The main menu should read "RE_Kenshi v0.3.5" (or newer).
+[/list]
+
+[h2]Features[/h2]
+[list]
+[*][b]Kill & knockout counter per squad member[/b] — kills and KOs counted separately, plus totals by victim race and faction.
+[*]Works for melee, ranged, animals and [b]stealth knockouts / assassinations[/b].
+[*][b]Achievements[/b] with an on-screen popup, a message-log entry and Kenshi's own notification sound (follows your game volume).
+[*][b]F6 panel[/b] with two tabs:
+[list]
+[*][b]Statistics[/b] — the selected character at the top, then the squad total and every character.
+[*][b]Achievements[/b] — completed and in progress, with progress like (3/10).
+[/list]
+[*]Stats are saved [b]inside your save file[/b] — each save has its own counters.
+[*][b]Any game language[/b] — the UI follows Kenshi's language setting, and translated race/faction names are mapped back to English with the game's own dictionary, so achievements work the same everywhere. Included: English and Português (Brasil).
+[/list]
+
+[h2]Customize[/h2]
+Everything lives in [b]achievements.txt[/b] inside the mod folder — no recompiling:
+[list]
+[*]Add or edit achievements: total kills/KOs, best single character, kills of a race or faction (wildcards like [i]*Skeleton*[/i] work great with mods that add variants).
+[*][b]@sound[/b] — any Kenshi notification sound, your own .wav, or none.
+[*][b]@key[/b] — panel key (default F6; F9 is Kenshi's quickload).
+[/list]
+Want it in your language? Copy [b]lang/en.txt[/b] to [b]lang/<your language>.txt[/b] (e.g. de_DE.txt, ru_RU.txt) and translate — pull requests welcome!
+
+[h2]Compatibility[/h2]
+[list]
+[*]Single-player. [b]Not[/b] made for Kenshi multiplayer mods.
+[*]Tested with [b]Genesis[/b] and a typical mod list — it only reads combat events and doesn't change game data, so load order doesn't matter.
+[*]Works with saves from before you installed it (counting starts from then on).
+[/list]
+
+[h2]Open source[/h2]
+Source code, issues and changelog on GitHub: [url=https://github.com/LucasSKrewer/kenshi-achievements]github.com/LucasSKrewer/kenshi-achievements[/url]
+Licensed [b]GPLv3[/b] — fork it, change it, learn from it.
+⭐ [b]If you like it, leave a like here and a star on GitHub[/b] — that's all I ask!
+
+Found a bug? Open an issue on GitHub. Setting [b]@debug = 1[/b] in achievements.txt writes every kill/KO to [i]RE_Kenshi_log.txt[/i] — attach it to the issue.
+
+[h2]Credits[/h2]
+[list]
+[*][url=https://github.com/BFrizzleFoShizzle]BFrizzleFoShizzle[/url] — RE_Kenshi and KenshiLib, which make plugins like this possible.
+[/list]
+
+[hr][/hr]
+[h2]🇧🇷 Português[/h2]
+Conta [b]kills e nocautes[/b] de cada personagem do seu grupo e libera [b]conquistas[/b] com aviso e som. [b]F6[/b] abre o painel com as abas Estatísticas e Conquistas. Os textos seguem o idioma do jogo (português incluso).
+[b]Precisa do [url=https://www.nexusmods.com/kenshi/mods/847]RE_Kenshi v0.3.5+[/url][/b] instalado. Código no [url=https://github.com/LucasSKrewer/kenshi-achievements]GitHub[/url] — se curtir, deixa um like e uma ⭐!

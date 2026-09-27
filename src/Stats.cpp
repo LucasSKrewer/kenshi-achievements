@@ -1,6 +1,7 @@
 #include "Stats.h"
 
 #include <algorithm>
+#include <cctype>
 #include <cstdlib>
 #include <fstream>
 #include <sstream>
@@ -53,10 +54,25 @@ namespace Stats
 			return true;
 		}
 
-		int lookup(const std::map<std::string, int>& m, const std::string& k)
+		// Comparação sem diferenciar maiúsculas, com '*' casando qualquer trecho.
+		// Mods como o Genesis criam variantes (Skeleton MKI, MKII...), então "Skeleton*" pega todas.
+		bool globMatch(const char* pat, const char* s)
 		{
-			std::map<std::string, int>::const_iterator it = m.find(k);
-			return it == m.end() ? 0 : it->second;
+			if (*pat == '\0')
+				return *s == '\0';
+			if (*pat == '*')
+				return globMatch(pat + 1, s) || (*s != '\0' && globMatch(pat, s + 1));
+			return *s != '\0' && tolower((unsigned char)*pat) == tolower((unsigned char)*s) && globMatch(pat + 1, s + 1);
+		}
+
+		// Soma todas as entradas cujo nome casa com o padrão.
+		int lookup(const std::map<std::string, int>& m, const std::string& pattern)
+		{
+			int total = 0;
+			for (std::map<std::string, int>::const_iterator it = m.begin(); it != m.end(); ++it)
+				if (globMatch(pattern.c_str(), it->first.c_str()))
+					total += it->second;
+			return total;
 		}
 
 		// Valor atual da métrica. Para char_*, `who` recebe o nome do melhor personagem.

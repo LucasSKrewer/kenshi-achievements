@@ -5,11 +5,13 @@
 # Métricas:
 #   kills, kos, takedowns (kills + KOs)        -> total do seu grupo
 #   char_kills, char_kos                       -> o melhor personagem sozinho
-#   race_kills:<Raça>, race_kos:<Raça>         -> ex.: race_kills:Shek, race_kills:Beak Thing
-#   faction_kills:<Facção>, faction_kos:<Facção> -> ex.: faction_kills:Holy Nation
+#   race_kills:<Raça>, race_kos:<Raça>         -> ex.: race_kills:Shek, race_kills:*Beak Thing
+#   faction_kills:<Facção>, faction_kos:<Facção> -> ex.: faction_kills:*Holy Nation*
 #
-# Raça/facção usam o nome exato do jogo (em inglês). O `id` não pode mudar depois
-# de liberado, senão a conquista volta a ficar travada nos saves antigos.
+# Raça/facção usam o nome do jogo em inglês (maiúsculas não importam). `*` casa qualquer
+# trecho: útil com mods como o Genesis, que criam variantes ("*Skeleton*" pega Skeleton MKI,
+# MKII, Screamer...). O `id` não pode mudar depois de liberado, senão a conquista volta a
+# ficar travada nos saves antigos.
 
 # Som ao liberar uma conquista:
 #   @som = Notifications:Building_Complete -> som do próprio Kenshi (padrão), respeita o volume do jogo.
@@ -35,9 +37,9 @@ takedown_1000 | takedowns | 1000 | Ninguém Fica de Pé   | 1000 kills + KOs som
 solo_50       | char_kills | 50  | Exército de Um Só    | Um único personagem com 50 mortes.
 solo_ko_100   | char_kos  | 100  | Especialista         | Um único personagem com 100 nocautes.
 
-beak_hunter   | race_kills:Beak Thing   | 5  | Caçador de Bicudos   | Mate 5 Beak Things.
+beak_hunter   | race_kills:*Beak Thing  | 5  | Caçador de Bicudos   | Mate 5 Beak Things.
 shek_slayer   | race_kills:Shek         | 25 | Quebra-Chifres       | Mate 25 Shek.
-skeleton_bane | race_kills:Skeleton     | 10 | Sucateiro            | Destrua 10 esqueletos.
+skeleton_bane | race_kills:*Skeleton*   | 10 | Sucateiro            | Destrua 10 esqueletos.
 
-heretic       | faction_kills:Holy Nation  | 50  | Herege               | Mate 50 membros da Holy Nation.
+heretic       | faction_kills:*Holy Nation* | 50 | Herege              | Mate 50 membros da Holy Nation.
 bandit_bane   | faction_kills:Dust Bandits | 25  | Poeira Assentada     | Mate 25 Dust Bandits.

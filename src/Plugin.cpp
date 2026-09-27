@@ -347,6 +347,7 @@ namespace
 	MyGUI::Button* tabStats = NULL;
 	MyGUI::Button* tabAchievements = NULL;
 	int currentTab = 0; // 0 = estatísticas, 1 = conquistas (lembrado entre aberturas)
+	std::string panelLastText; // só reescreve o texto quando muda (setCaption volta a rolagem pro topo)
 	bool panelCloseRequested = false;
 	DWORD panelRefreshedAt = 0;
 
@@ -497,11 +498,17 @@ namespace
 		tabAchievements->setCaption(Lang::tr("tab.achievements", "Achievements"));
 		tabAchievements->eventMouseButtonClick += MyGUI::newDelegate(onTabClick);
 
+		// Mesma skin/propriedades do log de mensagens do jogo (MessagesTextBox em Kenshi_OverviewWindow.layout):
+		// multilinha, texto no topo e barra de rolagem. A Kenshi_EditBox é de uma linha só (mostrava só a 1ª linha).
 		panelText = client->createWidgetReal<MyGUI::EditBox>(
-			"Kenshi_EditBox", 0.02f, 0.10f, 0.96f, 0.88f, MyGUI::Align::Stretch);
-		panelText->setEditReadOnly(true);
+			"Kenshi_WordWrap", 0.02f, 0.10f, 0.96f, 0.88f, MyGUI::Align::Stretch);
 		panelText->setEditMultiLine(true);
+		panelText->setEditStatic(true);
+		panelText->setEditReadOnly(true);
 		panelText->setEditWordWrap(true);
+		panelText->setVisibleVScroll(true);
+		panelText->setVisibleHScroll(false);
+		panelLastText.clear();
 		panel->eventWindowButtonPressed += MyGUI::newDelegate(onPanelButton);
 		selectTab(currentTab);
 	}
@@ -608,7 +615,12 @@ namespace
 		// Atualiza 1x por segundo (ou já, se trocou de aba / acabou de abrir)
 		if (panelText && GetTickCount() - panelRefreshedAt >= 1000)
 		{
-			panelText->setCaption(buildReport());
+			std::string text = buildReport();
+			if (text != panelLastText)
+			{
+				panelText->setCaption(text);
+				panelLastText = text;
+			}
 			panelRefreshedAt = GetTickCount();
 		}
 	}

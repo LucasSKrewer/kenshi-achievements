@@ -113,6 +113,7 @@ a contagem, as conquistas e o texto das duas abas.
 - Homônimos no grupo (dois "The Arbiter") ficam separados; o painel mostra a raça.
 
 Bugs e ideias: [issues](https://github.com/LucasSKrewer/kenshi-achievements/issues).
+Histórico de versões: [CHANGELOG.md](CHANGELOG.md).
 
 ## Publicar atualização na Workshop
 
@@ -120,6 +121,7 @@ Bugs e ideias: [issues](https://github.com/LucasSKrewer/kenshi-achievements/issu
 2. Abrir o FCS com **só** o `KenshiAchievements.mod` marcado (nada de Genesis & cia., senão viram dependência) e **não salvar**.
 3. Botão **Steam Workshop** → Upload. O `.info` guarda o ID `3809336824`: sem ele o FCS cria outro item.
 4. Descrição completa (BBCode) em `steam/description.bbcode`, editada direto na página da Workshop.
+5. Nova entrada no `CHANGELOG.md` e em `steam/changenotes-<versão>.bbcode` (colar na aba *Change Notes* da Workshop); tag `vX.Y.Z` + release com o zip.
 
 ## Licença
 

@@ -1,0 +1,47 @@
+# Changelog
+
+All notable changes to Kenshi Achievements. Versions follow [Semantic Versioning](https://semver.org/).
+
+## [1.0.0] — 2026-09-27
+
+First public release — [Steam Workshop](https://steamcommunity.com/sharedfiles/filedetails/?id=3809336824)
+and [GitHub release](https://github.com/LucasSKrewer/kenshi-achievements/releases/tag/v1.0.0).
+
+**Requires [RE_Kenshi](https://www.nexusmods.com/kenshi/mods/847) v0.3.5+** (KenshiLib 0.5.x).
+
+### Added
+- **Kill and knockout counter per squad member**, kept separately, plus totals by victim race
+  and faction.
+- Attacker detection that covers:
+  - melee, ranged and animal attacks, via every wound the victim takes (`MedicalSystem::addWound`);
+  - knockouts where the game only fills in the attacker a moment later: the KO waits up to 3 s;
+  - **stealth knockouts / assassinations**, which don't wound the victim: the attacker is the
+    squad member running the stealth task on it.
+- **16 achievements** with an on-screen popup, a message-log entry and Kenshi's own notification
+  sound (`Notifications:Building_Complete`, follows the game volume).
+- **`achievements.txt`** to add or edit achievements without recompiling:
+  - metrics: `kills`, `kos`, `takedowns`, `char_kills`, `char_kos`, `race_kills`, `race_kos`,
+    `faction_kills`, `faction_kos`;
+  - `*` wildcards and `,` alternatives in race/faction names (handy with mods that add variants,
+    like Genesis).
+- **F6 panel** (configurable with `@key`) with two tabs:
+  - **Statistics**: the selected character at the top, then the squad total and a per-character
+    list;
+  - **Achievements**: completed and in progress, with progress like `(3/10)`.
+- Characters with the same name are told apart by race, e.g. "The Arbiter (Skeleton MKI)".
+- **Stats stored inside each save**, in a GameData record of the mod's own type. Saves from
+  before the mod work, and counting starts from then on.
+- **Any game language**:
+  - the UI follows Kenshi's `language` setting through `lang/<language>.txt`, falling back to
+    English. English and Português (Brasil) are included;
+  - translated race/faction names are mapped back to English with the game's own dictionary
+    (`locale/<language>/gamedata.po`), so `achievements.txt` works the same in every language.
+- `@sound` to pick the unlock sound: a Kenshi event, a `.wav` in the mod folder, or `none`.
+- `@debug = 1` logs every kill, KO and squad hit to `RE_Kenshi_log.txt`, for bug reports.
+
+### Notes
+- Single-player only; not designed for multiplayer mods.
+- Tested with Genesis and a typical Workshop mod list. The mod doesn't change game data, so load
+  order doesn't matter.
+
+[1.0.0]: https://github.com/LucasSKrewer/kenshi-achievements/releases/tag/v1.0.0

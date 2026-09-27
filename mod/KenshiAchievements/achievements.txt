@@ -12,12 +12,13 @@
 # de liberado, senão a conquista volta a ficar travada nos saves antigos.
 
 # Som ao liberar uma conquista:
-#   @som = achievement.wav   -> qualquer .wav nesta pasta (padrão)
-#   @som = Change_Level      -> um som do próprio Kenshi, respeita o volume do jogo. Outros:
-#                               Notifications, Character_Unlock_Success, Building_Confirm,
-#                               Research_Tab, Stats_Open, Tech_Open, General_Click
-#   @som = nenhum            -> sem som
-@som = achievement.wav
+#   @som = Notifications:Building_Complete -> som do próprio Kenshi (padrão), respeita o volume do jogo.
+#       Outras notificações do jogo: Notifications:Thing_Complete, Notifications:Raid,
+#       Notifications:Bounty_Fulfilled, Notifications:New_Biome
+#       Outros eventos: Character_Unlock_Success, Stats_Open, Tech_Open, Building_Confirm
+#   @som = achievement.wav                 -> qualquer .wav nesta pasta (o sino incluso, ou o seu)
+#   @som = nenhum                          -> sem som
+@som = Notifications:Building_Complete
 
 first_blood   | kills     | 1    | Primeiro Sangue      | Mate seu primeiro inimigo.
 killer_10     | kills     | 10   | Mãos Sujas           | 10 mortes.

@@ -275,13 +275,15 @@ namespace
 	// Som da conquista (@som no achievements.txt):
 	//   arquivo .wav na pasta do mod -> tocado pelo Windows (padrão: achievement.wav)
 	//   nome de evento Wwise do Kenshi (ex.: Change_Level) -> tocado pelo motor de áudio do jogo
+	//   Evento:Estado (ex.: Notifications:Building_Complete) -> antes seta o switch de mesmo nome do evento
 	//   "nenhum" -> mudo
 	std::vector<char> soundWav;
 	std::string soundEvent;
+	std::string soundSwitch;
 
 	void loadSound(const std::string& dir)
 	{
-		std::string s = Stats::setting("som", "achievement.wav");
+		std::string s = Stats::setting("som", "Notifications:Building_Complete");
 		if (s == "nenhum")
 			return;
 		if (s.size() > 4 && _stricmp(s.c_str() + s.size() - 4, ".wav") == 0)
@@ -293,7 +295,10 @@ namespace
 				ErrorLog("KenshiAchievements: não abriu o som " + dir + s);
 			return;
 		}
-		soundEvent = s;
+		size_t colon = s.find(':');
+		soundEvent = s.substr(0, colon);
+		if (colon != std::string::npos)
+			soundSwitch = s.substr(colon + 1);
 	}
 
 	void playUnlockSound()
@@ -309,8 +314,11 @@ namespace
 		Character* c = ou->player->selectedCharacter.getCharacter();
 		if (!c && ou->player->playerCharacters.size() > 0)
 			c = ou->player->playerCharacters[0];
-		if (c)
-			c->audioEvent(soundEvent.c_str(), SOUNDRANGE_ALWAYS);
+		if (!c)
+			return;
+		if (!soundSwitch.empty())
+			c->audioValue(soundEvent.c_str(), soundSwitch.c_str());
+		c->audioEvent(soundEvent.c_str(), SOUNDRANGE_ALWAYS);
 	}
 
 	void log(const std::string& owner, const std::string& msg)

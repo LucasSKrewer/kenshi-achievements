@@ -14,7 +14,7 @@ feitos pelo seu grupo e libera **conquistas** configuráveis. Só single-player.
 - Conquista liberada → janela no topo da tela + linha no log de mensagens + som.
 - **F9** abre/fecha o painel com o placar e o progresso das conquistas.
 - Conquistas em `mod/KenshiAchievements/achievements.txt` — formato explicado no próprio arquivo.
-- Som configurável (`@som`): o `achievement.wav` incluso, qualquer `.wav` seu, ou um som do próprio Kenshi.
+- Som configurável (`@som`): padrão é a notificação "construção concluída" do próprio Kenshi; dá pra usar outro som do jogo, o `achievement.wav` incluso ou qualquer `.wav` seu.
 
 ## Instalar (jogador)
 

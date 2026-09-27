@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{6A1F0C2E-5B7D-4E8A-9C3B-2D4E6F8A0B1C}</ProjectGuid>
+    <RootNamespace>KenshiAchievements</RootNamespace>
+    <Keyword>Win32Proj</Keyword>
+  </PropertyGroup>
+  <!-- Dependências: sobrescreva por variável de ambiente ou /p:KENSHILIB_DIR=... -->
+  <PropertyGroup>
+    <KENSHILIB_DIR Condition="'$(KENSHILIB_DIR)'==''">$(MSBuildThisFileDirectory)deps\KenshiLib</KENSHILIB_DIR>
+    <BOOST_ROOT Condition="'$(BOOST_ROOT)'==''">$(MSBuildThisFileDirectory)deps\boost_1_60_0</BOOST_ROOT>
+    <KENSHI_DIR Condition="'$(KENSHI_DIR)'==''">E:\steam\steamapps\common\Kenshi</KENSHI_DIR>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <!-- Kenshi foi compilado com MSVC 2010: o plugin TEM que usar v100 (mesma STL/CRT). -->
+    <PlatformToolset>v100</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <TargetName>KenshiAchievements</TargetName>
+    <OutDir>$(MSBuildThisFileDirectory)mod\KenshiAchievements\</OutDir>
+    <IntDir>$(MSBuildThisFileDirectory)build\obj\</IntDir>
+    <IncludePath>$(KENSHILIB_DIR)\Include;$(BOOST_ROOT);$(IncludePath)</IncludePath>
+    <LibraryPath>$(KENSHILIB_DIR)\Libraries;$(KENSHILIB_DIR)\Libraries\mygui;$(KENSHILIB_DIR)\Libraries\ogre;$(BOOST_ROOT)\stage\lib;$(LibraryPath)</LibraryPath>
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>NDEBUG;_WINDOWS;UNICODE;_UNICODE;_USRDLL;BOOST_ALL_NO_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <!-- Fontes em UTF-8 SEM BOM: o cl do VS2010 lê como ANSI e repassa os bytes UTF-8
+           intactos pras strings, que é o que o MyGUI espera. Com BOM ele converteria pra cp1252. -->
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>kenshilib.lib;MyGUIEngine_x64.lib;OgreMain_x64.lib;winmm.lib;libboost_thread-vc100-mt-1_60.lib;libboost_system-vc100-mt-1_60.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="src\Plugin.cpp" />
+    <ClCompile Include="src\Stats.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\Stats.h" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <!-- Depois de compilar: copia o mod pra pasta do Kenshi -->
+  <Target Name="InstallMod" AfterTargets="Build" Condition="Exists('$(KENSHI_DIR)\mods')">
+    <ItemGroup>
+      <ModFiles Include="$(MSBuildThisFileDirectory)mod\KenshiAchievements\*.dll;$(MSBuildThisFileDirectory)mod\KenshiAchievements\*.mod;$(MSBuildThisFileDirectory)mod\KenshiAchievements\*.json;$(MSBuildThisFileDirectory)mod\KenshiAchievements\*.txt;$(MSBuildThisFileDirectory)mod\KenshiAchievements\*.wav" />
+    </ItemGroup>
+    <Copy SourceFiles="@(ModFiles)" DestinationFolder="$(KENSHI_DIR)\mods\KenshiAchievements" SkipUnchangedFiles="true" />
+    <Message Importance="high" Text="Mod instalado em $(KENSHI_DIR)\mods\KenshiAchievements" />
+  </Target>
+</Project>

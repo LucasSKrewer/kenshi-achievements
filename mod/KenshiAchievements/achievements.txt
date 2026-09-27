@@ -1,0 +1,42 @@
+# Conquistas do Kenshi Achievements — edite à vontade, é lido quando o jogo abre.
+#
+# Formato:  id | métrica | alvo | título | descrição
+#
+# Métricas:
+#   kills, kos, takedowns (kills + KOs)        -> total do seu grupo
+#   char_kills, char_kos                       -> o melhor personagem sozinho
+#   race_kills:<Raça>, race_kos:<Raça>         -> ex.: race_kills:Shek, race_kills:Beak Thing
+#   faction_kills:<Facção>, faction_kos:<Facção> -> ex.: faction_kills:Holy Nation
+#
+# Raça/facção usam o nome exato do jogo (em inglês). O `id` não pode mudar depois
+# de liberado, senão a conquista volta a ficar travada nos saves antigos.
+
+# Som ao liberar uma conquista:
+#   @som = achievement.wav   -> qualquer .wav nesta pasta (padrão)
+#   @som = Change_Level      -> um som do próprio Kenshi, respeita o volume do jogo. Outros:
+#                               Notifications, Character_Unlock_Success, Building_Confirm,
+#                               Research_Tab, Stats_Open, Tech_Open, General_Click
+#   @som = nenhum            -> sem som
+@som = achievement.wav
+
+first_blood   | kills     | 1    | Primeiro Sangue      | Mate seu primeiro inimigo.
+killer_10     | kills     | 10   | Mãos Sujas           | 10 mortes.
+killer_100    | kills     | 100  | Açougueiro           | 100 mortes.
+killer_500    | kills     | 500  | Ceifador             | 500 mortes.
+killer_1000   | kills     | 1000 | Lenda de Kenshi      | 1000 mortes.
+
+first_ko      | kos       | 1    | Boa Noite            | Nocauteie seu primeiro inimigo.
+ko_50         | kos       | 50   | Nocauteador          | 50 nocautes.
+ko_250        | kos       | 250  | Punhos de Ferro      | 250 nocautes.
+
+takedown_1000 | takedowns | 1000 | Ninguém Fica de Pé   | 1000 kills + KOs somados.
+
+solo_50       | char_kills | 50  | Exército de Um Só    | Um único personagem com 50 mortes.
+solo_ko_100   | char_kos  | 100  | Especialista         | Um único personagem com 100 nocautes.
+
+beak_hunter   | race_kills:Beak Thing   | 5  | Caçador de Bicudos   | Mate 5 Beak Things.
+shek_slayer   | race_kills:Shek         | 25 | Quebra-Chifres       | Mate 25 Shek.
+skeleton_bane | race_kills:Skeleton     | 10 | Sucateiro            | Destrua 10 esqueletos.
+
+heretic       | faction_kills:Holy Nation  | 50  | Herege               | Mate 50 membros da Holy Nation.
+bandit_bane   | faction_kills:Dust Bandits | 25  | Poeira Assentada     | Mate 25 Dust Bandits.

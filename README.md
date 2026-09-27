@@ -33,6 +33,10 @@ O mod segue o idioma escolhido no Kenshi (`language=` no `settings.cfg`):
 
 ## Instalar (jogador)
 
+**Steam:** assine na [Steam Workshop](https://steamcommunity.com/sharedfiles/filedetails/?id=3809336824) e siga os passos 1 e 3 abaixo.
+
+**Manual (GOG etc.):**
+
 1. Tenha o [RE_Kenshi](https://github.com/BFrizzleFoShizzle/RE_Kenshi/releases) **v0.3.5+** instalado
    (o menu principal mostra "RE_Kenshi v0.3.5").
 2. Copie a pasta `KenshiAchievements` para `Kenshi\mods\`.
@@ -109,6 +113,13 @@ a contagem, as conquistas e o texto das duas abas.
 - Homônimos no grupo (dois "The Arbiter") ficam separados; o painel mostra a raça.
 
 Bugs e ideias: [issues](https://github.com/LucasSKrewer/kenshi-achievements/issues).
+
+## Publicar atualização na Workshop
+
+1. `build.ps1` (compila e instala em `Kenshi\mods\KenshiAchievements`, junto com o `_KenshiAchievements.info`).
+2. Abrir o FCS com **só** o `KenshiAchievements.mod` marcado (nada de Genesis & cia., senão viram dependência) e **não salvar**.
+3. Botão **Steam Workshop** → Upload. O `.info` guarda o ID `3809336824`: sem ele o FCS cria outro item.
+4. Descrição completa (BBCode) em `steam/description.bbcode`, editada direto na página da Workshop.
 
 ## Licença
 

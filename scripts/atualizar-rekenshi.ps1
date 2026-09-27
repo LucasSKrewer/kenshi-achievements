@@ -32,6 +32,6 @@ Write-Host "RE_Kenshi 0.3.5 + KenshiLib 0.5.1 instalados"
 # Mod
 $dest = Join-Path $KenshiDir "mods\KenshiAchievements"
 New-Item -ItemType Directory -Force $dest | Out-Null
-Copy-Item "$root\mod\KenshiAchievements\*" $dest -Include *.dll, *.mod, *.json, *.txt, *.wav -Force
+Copy-Item "$root\mod\KenshiAchievements\*" $dest -Include *.dll, *.mod, *.json, *.txt, *.wav, *.info, *.img -Force
 Copy-Item "$root\mod\KenshiAchievements\lang" $dest -Recurse -Force
 Write-Host "Mod instalado em $dest"

@@ -52,10 +52,10 @@ int main(int argc, char** argv)
 	check(Stats::setting("key", "?") == "F6", "@key = F6");
 
 	Stats::reset();
-	Stats::recordKill("h1", "The Arbiter", Lang::toEnglish("Camponês"), Lang::toEnglish("Bandidos da Poeira"));
-	Stats::recordKill("h1", "The Arbiter", Lang::toEnglish("Beduíno"), Lang::toEnglish("Bandidos da Poeira"));
-	Stats::recordKill("h2", "Brooke", "Skeleton Screamer MKII", "Renegados");
-	Stats::recordKO("h2", "Brooke", "Shek", Lang::toEnglish("Bandidos da Poeira"));
+	Stats::recordKill("h1", "The Arbiter", "Skeleton Screamer MKII", Lang::toEnglish("Camponês"), Lang::toEnglish("Bandidos da Poeira"));
+	Stats::recordKill("h1", "The Arbiter", "Skeleton Screamer MKII", Lang::toEnglish("Beduíno"), Lang::toEnglish("Bandidos da Poeira"));
+	Stats::recordKill("h2", "Brooke", "White Direwolf", "Skeleton Screamer MKII", "Renegados");
+	Stats::recordKO("h2", "Brooke", "White Direwolf", "Shek", Lang::toEnglish("Bandidos da Poeira"));
 	std::vector<Stats::Unlock> u = Stats::popUnlocks();
 	check(u.size() == 2, "liberou First Blood + Good Night");
 	for (size_t i = 0; i < u.size(); ++i)
@@ -66,24 +66,24 @@ int main(int argc, char** argv)
 	check(achs.find("Poeira Assentada  (2/25)") != std::string::npos, "Dust Bandits contou kills traduzidas (2/25)");
 	check(achs.find("Sucateiro  (1/10)") != std::string::npos, "*Skeleton* pegou o Screamer MKII (1/10)");
 
-	// Save de versão antiga: o mesmo personagem em duas chaves (handles) diferentes
+	// Homônimos (visto no jogo: dois "The Arbiter" de raças diferentes): contagens separadas,
+	// raça no nome pra diferenciar, e a raça sobrevive ao save/load.
 	{
+		Stats::reset();
+		Stats::recordKill("hA", "The Arbiter", "Skeleton Screamer MKII", "Shek", "Dust Bandits");
+		Stats::recordKill("hA", "The Arbiter", "Skeleton Screamer MKII", "Shek", "Dust Bandits");
+		Stats::recordKill("hB", "The Arbiter", "Skeleton MKI", "Shek", "Dust Bandits");
+		Stats::recordKill("hC", "Kang", "Shek", "Shek", "Dust Bandits");
 		std::map<std::string, int> ints;
 		std::map<std::string, std::string> strs;
-		ints["total.k"] = 11;
-		ints["c.k:handleA"] = 9;
-		ints["c.k:handleB"] = 2;
-		strs["c.n:handleA"] = "The Arbiter";
-		strs["c.n:handleB"] = "The Arbiter";
+		Stats::exportTo(ints, strs);
 		Stats::importFrom(ints, strs);
-		std::string antes = Stats::statsReport("uid-arbiter", "The Arbiter");
-		check(antes.find("The Arbiter\n   Kills: 11") != std::string::npos, "selecionado com entradas antigas soma pelo nome (11)");
-		Stats::recordKill("uid-arbiter", "The Arbiter", "Shek", "Dust Bandits");
-		std::string depois = Stats::statsReport("uid-arbiter", "The Arbiter");
-		size_t first = depois.find("The Arbiter:");
-		check(first != std::string::npos && depois.find("The Arbiter:", first + 1) == std::string::npos,
-			"duplicado juntado numa entrada só");
-		check(depois.find("The Arbiter:  Kills: 12") != std::string::npos, "contagem juntada = 12");
+		std::string r = Stats::statsReport("hB", "The Arbiter");
+		check(r.find("The Arbiter (Skeleton Screamer MKII):  Kills: 2") != std::string::npos, "homônimo A separado (2)");
+		check(r.find("The Arbiter (Skeleton MKI):  Kills: 1") != std::string::npos, "homônimo B separado (1)");
+		check(r.find("The Arbiter (Skeleton MKI)\n   Kills: 1") != std::string::npos, "selecionado B mostra só as dele");
+		check(r.find("Kang:  Kills: 1") != std::string::npos, "nome único sem raça");
+		printf("\n===== homônimos =====\n%s", r.c_str());
 		Stats::popUnlocks();
 	}
 

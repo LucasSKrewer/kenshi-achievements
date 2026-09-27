@@ -24,6 +24,7 @@ namespace Stats
 		const char* const P_CHAR_KILLS = "c.k:";
 		const char* const P_CHAR_KOS = "c.o:";
 		const char* const P_CHAR_NAME = "c.n:";
+		const char* const P_CHAR_RACE = "c.r:";
 		const char* const P_RACE_KILLS = "r.k:";
 		const char* const P_RACE_KOS = "r.o:";
 		const char* const P_FACTION_KILLS = "f.k:";
@@ -169,30 +170,13 @@ namespace Stats
 			return m.compare(0, 5, "race_") == 0 || m.compare(0, 8, "faction_") == 0;
 		}
 
-		// Junta em `key` as entradas antigas com o mesmo nome e outra chave (versões antigas usavam o
-		// handle, que muda ao recarregar o save, e o mesmo personagem aparecia duplicado).
-		void mergeSameName(const std::string& key, const std::string& name)
+		void record(bool kill, const std::string& key, const std::string& name, const std::string& charRace,
+			const std::string& race, const std::string& faction)
 		{
-			for (std::map<std::string, CharStats>::iterator it = chars.begin(); it != chars.end();)
-			{
-				if (it->first != key && it->second.name == name)
-				{
-					chars[key].kills += it->second.kills;
-					chars[key].kos += it->second.kos;
-					chars.erase(it++);
-				}
-				else
-				{
-					++it;
-				}
-			}
-		}
-
-		void record(bool kill, const std::string& key, const std::string& name, const std::string& race, const std::string& faction)
-		{
-			mergeSameName(key, name);
 			CharStats& c = chars[key];
 			c.name = name;
+			if (!charRace.empty())
+				c.race = charRace;
 			if (kill)
 			{
 				++c.kills;
@@ -214,6 +198,11 @@ namespace Stats
 		{
 			if (a.kills != b.kills) return a.kills > b.kills;
 			return a.kos > b.kos;
+		}
+
+		bool byKillsDescPair(const std::pair<CharStats, std::string>& a, const std::pair<CharStats, std::string>& b)
+		{
+			return byKillsDesc(a.first, b.first);
 		}
 	}
 
@@ -312,14 +301,16 @@ namespace Stats
 		pending.clear();
 	}
 
-	void recordKill(const std::string& key, const std::string& name, const std::string& race, const std::string& faction)
+	void recordKill(const std::string& key, const std::string& name, const std::string& charRace,
+		const std::string& race, const std::string& faction)
 	{
-		record(true, key, name, race, faction);
+		record(true, key, name, charRace, race, faction);
 	}
 
-	void recordKO(const std::string& key, const std::string& name, const std::string& race, const std::string& faction)
+	void recordKO(const std::string& key, const std::string& name, const std::string& charRace,
+		const std::string& race, const std::string& faction)
 	{
-		record(false, key, name, race, faction);
+		record(false, key, name, charRace, race, faction);
 	}
 
 	std::vector<Unlock> popUnlocks()
@@ -338,6 +329,8 @@ namespace Stats
 			ints[P_CHAR_KILLS + it->first] = it->second.kills;
 			ints[P_CHAR_KOS + it->first] = it->second.kos;
 			strs[P_CHAR_NAME + it->first] = it->second.name;
+			if (!it->second.race.empty())
+				strs[P_CHAR_RACE + it->first] = it->second.race;
 		}
 		std::map<std::string, int>::const_iterator i;
 		for (i = killsByRace.begin(); i != killsByRace.end(); ++i) ints[P_RACE_KILLS + i->first] = i->second;
@@ -371,6 +364,8 @@ namespace Stats
 			std::string rest;
 			if (startsWith(it->first, P_CHAR_NAME, rest))
 				chars[rest].name = it->second;
+			else if (startsWith(it->first, P_CHAR_RACE, rest))
+				chars[rest].race = it->second;
 		}
 		// Conquistas novas no achievements.txt que o save antigo já cumpre: libera sem anunciar.
 		checkAchievements(false);
@@ -381,6 +376,19 @@ namespace Stats
 		std::string statLine(int kills, int kos)
 		{
 			return Lang::fill(Lang::fill(Lang::tr("stats.line", "Kills: {kills}    KOs: {kos}"), "kills", kills), "kos", kos);
+		}
+
+		// Nome pra exibir; se outro personagem tem o mesmo nome, acrescenta a raça pra diferenciar.
+		std::string displayName(const std::string& key, const std::string& name, const std::string& race)
+		{
+			if (race.empty())
+				return name;
+			for (std::map<std::string, CharStats>::const_iterator it = chars.begin(); it != chars.end(); ++it)
+			{
+				if (it->first != key && it->second.name == name)
+					return name + " (" + race + ")";
+			}
+			return name;
 		}
 	}
 
@@ -396,38 +404,28 @@ namespace Stats
 			CharStats sel;
 			std::map<std::string, CharStats>::const_iterator it = chars.find(selectedKey);
 			if (it != chars.end())
-			{
 				sel = it->second;
-			}
-			else
-			{
-				// Entrada de versão antiga (chave = handle): soma pelo nome
-				for (it = chars.begin(); it != chars.end(); ++it)
-				{
-					if (it->second.name == selectedName)
-					{
-						sel.kills += it->second.kills;
-						sel.kos += it->second.kos;
-					}
-				}
-			}
-			o << selectedName << "\n";
+			o << displayName(selectedKey, selectedName, sel.race) << "\n";
 			o << "   " << statLine(sel.kills, sel.kos) << "\n";
 		}
 
 		o << "\n" << Lang::tr("stats.squad", "--- Squad total ---") << "\n";
 		o << "   " << statLine(totalKills, totalKOs) << "\n";
 
-		std::vector<CharStats> list;
+		// Lista com a chave junto, pra desambiguar homônimos
+		std::vector<std::pair<CharStats, std::string> > list;
 		for (std::map<std::string, CharStats>::const_iterator it = chars.begin(); it != chars.end(); ++it)
-			list.push_back(it->second);
-		std::sort(list.begin(), list.end(), byKillsDesc);
+			list.push_back(std::make_pair(it->second, it->first));
+		std::sort(list.begin(), list.end(), byKillsDescPair);
 
 		o << "\n" << Lang::tr("stats.per_char", "--- Per character ---") << "\n";
 		if (list.empty())
 			o << Lang::tr("stats.none", "(nobody yet)") << "\n";
 		for (size_t i = 0; i < list.size(); ++i)
-			o << list[i].name << ":  " << statLine(list[i].kills, list[i].kos) << "\n";
+		{
+			const CharStats& c = list[i].first;
+			o << displayName(list[i].second, c.name, c.race) << ":  " << statLine(c.kills, c.kos) << "\n";
+		}
 		return o.str();
 	}
 

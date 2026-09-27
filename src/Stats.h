@@ -15,6 +15,7 @@ namespace Stats
 	struct CharStats
 	{
 		std::string name;
+		std::string race; // do personagem, pra diferenciar homônimos no painel ("The Arbiter (Skeleton MKI)")
 		int kills;
 		int kos;
 		CharStats() : kills(0), kos(0) {}
@@ -47,9 +48,12 @@ namespace Stats
 
 	void reset();
 
-	// key = handle do personagem do jogador (estável entre saves); name só para exibição.
-	void recordKill(const std::string& key, const std::string& name, const std::string& race, const std::string& faction);
-	void recordKO(const std::string& key, const std::string& name, const std::string& race, const std::string& faction);
+	// key = handle do personagem do jogador (estável entre saves — conferido no jogo); name/charRace só
+	// para exibição (pode haver homônimos, então nunca identificar pelo nome); race/faction = da vítima.
+	void recordKill(const std::string& key, const std::string& name, const std::string& charRace,
+		const std::string& race, const std::string& faction);
+	void recordKO(const std::string& key, const std::string& name, const std::string& charRace,
+		const std::string& race, const std::string& faction);
 
 	// Conquistas desbloqueadas desde a última chamada.
 	std::vector<Unlock> popUnlocks();

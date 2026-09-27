@@ -25,7 +25,6 @@
 #include <kenshi/GameData.h>
 #include <kenshi/GameDataManager.h>
 #include <kenshi/GameWorld.h>
-#include <kenshi/InstanceID.h>
 #include <kenshi/Globals.h>
 #include <kenshi/MedicalSystem.h>
 #include <kenshi/PlayerInterface.h>
@@ -84,13 +83,11 @@ namespace
 		return o->getHandle().toString();
 	}
 
-	// ID estável do personagem: o InstanceID é o que o próprio save usa. O handle muda ao
-	// recarregar o save, e o mesmo personagem aparecia duplicado no painel (#4).
+	// ID do personagem: o handle, que o log mostrou estável entre save/load (Brooke manteve o mesmo em
+	// várias sessões). O InstanceID vem vazio pra personagens. Nunca usar o nome: há homônimos
+	// (dois "The Arbiter" de raças diferentes no mesmo grupo).
 	std::string charKey(Character* c)
 	{
-		InstanceID* id = c->getInstanceID();
-		if (id && !id->uid.empty())
-			return id->uid;
 		return handleKey(c);
 	}
 
@@ -237,9 +234,9 @@ namespace
 		dbg("  CONTADO para " + describe(attacker) + " id=" + key);
 		std::string name = attacker->getName();
 		if (kill)
-			Stats::recordKill(key, name, Lang::toEnglish(raceName(victim)), Lang::toEnglish(factionName(victim)));
+			Stats::recordKill(key, name, raceName(attacker), Lang::toEnglish(raceName(victim)), Lang::toEnglish(factionName(victim)));
 		else
-			Stats::recordKO(key, name, Lang::toEnglish(raceName(victim)), Lang::toEnglish(factionName(victim)));
+			Stats::recordKO(key, name, raceName(attacker), Lang::toEnglish(raceName(victim)), Lang::toEnglish(factionName(victim)));
 	}
 
 	// Chamado a cada frame (thread principal): resolve KOs que ficaram sem atacante.

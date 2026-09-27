@@ -1,7 +1,7 @@
 # Kenshi Achievements
 
 > **EN:** An [RE_Kenshi](https://github.com/BFrizzleFoShizzle/RE_Kenshi) plugin that tracks **kills** and
-> **knockouts** per squad member and unlocks configurable **achievements** (popup + sound, F9 stats panel).
+> **knockouts** per squad member and unlocks configurable **achievements** (popup + sound, F6 stats panel, configurable).
 > Stats are stored inside your save. Single-player. Docs below are in Portuguese.
 
 Plugin [RE_Kenshi](https://github.com/BFrizzleFoShizzle/RE_Kenshi) que conta **kills** e **KOs**
@@ -12,7 +12,7 @@ feitos pelo seu grupo e libera **conquistas** configuráveis. Só single-player.
 - Contagem por personagem, por raça e por facção da vítima; mortes e KOs separados.
 - Os contadores ficam **dentro do save** (um `GameData` próprio, tipo `4242`); cada save tem os seus.
 - Conquista liberada → janela no topo da tela + linha no log de mensagens + som.
-- **F9** abre/fecha o painel com o placar e o progresso das conquistas.
+- **F6** abre/fecha o painel com o placar e o progresso das conquistas (tecla configurável com `@tecla`).
 - Conquistas em `mod/KenshiAchievements/achievements.txt` — formato explicado no próprio arquivo.
 - Som configurável (`@som`): padrão é a notificação "construção concluída" do próprio Kenshi; dá pra usar outro som do jogo, o `achievement.wav` incluso ou qualquer `.wav` seu.
 

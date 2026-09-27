@@ -34,12 +34,15 @@
 
 #include <mygui/MyGUI_EditBox.h>
 #include <mygui/MyGUI_Gui.h>
+#include <mygui/MyGUI_InputManager.h>
 #include <mygui/MyGUI_TextBox.h>
 #include <mygui/MyGUI_Window.h>
 
 #include <boost/thread/lock_guard.hpp>
 #include <boost/thread/mutex.hpp>
 
+#include <cctype>
+#include <cstdlib>
 #include <deque>
 #include <fstream>
 #include <iterator>
@@ -57,7 +60,7 @@ namespace
 
 	const DWORD HIT_MEMORY_MS = 30000;  // quanto tempo um golpe do jogador vale para autoria
 	const DWORD TOAST_MS = 6000;
-	const int PANEL_KEY = VK_F9;
+	int panelKey = VK_F6; // @tecla no achievements.txt. F9 é o quickload do Kenshi, F5 o quicksave.
 
 	boost::mutex lock; // hooks de combate podem vir de outras threads
 
@@ -362,7 +365,7 @@ namespace
 		}
 		panel = gui->createWidgetReal<MyGUI::Window>("Kenshi_WindowCX", 0.30f, 0.15f, 0.40f, 0.65f,
 			MyGUI::Align::Default, "Overlapped", "KenshiAchievementsPanel");
-		panel->setCaption("Kills & Conquistas  (F9 fecha)");
+		panel->setCaption("Kills & Conquistas");
 		panelText = panel->getClientWidget()->createWidgetReal<MyGUI::EditBox>(
 			"Kenshi_EditBox", 0.02f, 0.02f, 0.96f, 0.96f, MyGUI::Align::Stretch);
 		panelText->setEditReadOnly(true);
@@ -371,11 +374,44 @@ namespace
 		panelRefreshedAt = 0; // força refresh
 	}
 
+	// "F6", "F10", "L", "7", "NUM5" -> virtual-key. 0 se não reconhecer.
+	int parseKey(const std::string& raw)
+	{
+		std::string s;
+		for (size_t i = 0; i < raw.size(); ++i)
+			s += (char)toupper((unsigned char)raw[i]);
+		if (s.size() >= 2 && s[0] == 'F')
+		{
+			int n = atoi(s.c_str() + 1);
+			if (n >= 1 && n <= 12)
+				return VK_F1 + n - 1;
+		}
+		if (s.size() == 4 && s.compare(0, 3, "NUM") == 0 && isdigit((unsigned char)s[3]))
+			return VK_NUMPAD0 + (s[3] - '0');
+		if (s.size() == 1 && (isalpha((unsigned char)s[0]) || isdigit((unsigned char)s[0])))
+			return s[0];
+		return 0;
+	}
+
 	bool gameHasFocus()
 	{
 		DWORD pid = 0;
 		GetWindowThreadProcessId(GetForegroundWindow(), &pid);
 		return pid == GetCurrentProcessId();
+	}
+
+	bool modifierHeld()
+	{
+		return (GetAsyncKeyState(VK_CONTROL) & 0x8000) || (GetAsyncKeyState(VK_SHIFT) & 0x8000)
+			|| (GetAsyncKeyState(VK_MENU) & 0x8000);
+	}
+
+	// Não abre o painel enquanto o jogador digita (renomear personagem, etc.).
+	bool typingInTextBox()
+	{
+		MyGUI::InputManager* input = MyGUI::InputManager::getInstancePtr();
+		MyGUI::Widget* w = input ? input->getKeyFocusWidget() : NULL;
+		return w && w->castType<MyGUI::EditBox>(false) && w != panelText;
 	}
 
 	void (*mainLoop_orig)(GameWorld*, float) = NULL;
@@ -421,8 +457,8 @@ namespace
 			playUnlockSound();
 		showNextToast(gui);
 
-		bool keyDown = (GetAsyncKeyState(PANEL_KEY) & 0x8000) != 0;
-		if (keyDown && !keyWasDown && gameHasFocus())
+		bool keyDown = (GetAsyncKeyState(panelKey) & 0x8000) != 0;
+		if (keyDown && !keyWasDown && gameHasFocus() && !modifierHeld() && !typingInTextBox())
 		{
 			togglePanel(gui);
 			refresh = panelText != NULL;
@@ -458,6 +494,13 @@ __declspec(dllexport) void startPlugin()
 	for (size_t i = 0; i < errors.size(); ++i)
 		ErrorLog("KenshiAchievements: achievements.txt " + errors[i]);
 	loadSound(dir);
+
+	std::string keyName = Stats::setting("tecla", "F6");
+	int key = parseKey(keyName);
+	if (key)
+		panelKey = key;
+	else
+		ErrorLog("KenshiAchievements: @tecla desconhecida '" + keyName + "', usando F6");
 
 	std::ostringstream o;
 	o << "KenshiAchievements: " << n << " conquistas carregadas";

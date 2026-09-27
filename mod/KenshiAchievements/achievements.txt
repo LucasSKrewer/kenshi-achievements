@@ -31,7 +31,7 @@
 @key = F6
 
 # Diagnostics: 1 logs every kill/KO/hit to RE_Kenshi_log.txt (keep 0 for normal play).
-@debug = 1
+@debug = 0
 
 first_blood   | kills      | 1    | First Blood          | Kill your first enemy.
 killer_10     | kills      | 10   | Dirty Hands          | 10 kills.

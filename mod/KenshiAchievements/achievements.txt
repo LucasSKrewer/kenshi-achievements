@@ -27,6 +27,9 @@
 # Evite as teclas que o Kenshi já usa: F1-F5, F7-F9 (F9 = quickload), I, M, C, T, B, Y, R...
 @tecla = F6
 
+# Diagnóstico: 1 registra cada kill/KO/golpe no RE_Kenshi_log.txt (deixe 0 no dia a dia).
+@debug = 1
+
 first_blood   | kills     | 1    | Primeiro Sangue      | Mate seu primeiro inimigo.
 killer_10     | kills     | 10   | Mãos Sujas           | 10 mortes.
 killer_100    | kills     | 100  | Açougueiro           | 100 mortes.

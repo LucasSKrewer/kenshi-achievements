@@ -71,6 +71,8 @@ namespace
 	};
 	std::map<std::string, LastHit> lastPlayerHit; // chave = handle da vítima
 	std::set<std::string> countedDeaths;
+	const DWORD KO_DEDUPE_MS = 10000; // knockout() repetido na mesma vítima em menos que isso não conta de novo
+	std::map<std::string, DWORD> lastKO; // chave = handle da vítima
 
 	// ---------- utilitários ----------
 
@@ -103,15 +105,44 @@ namespace
 		return slash == std::string::npos ? "" : s.substr(0, slash + 1);
 	}
 
+	// @debug = 1 no achievements.txt: registra cada etapa no RE_Kenshi_log.txt.
+	bool debug = false;
+	int debugHits = 0; // limita o spam de golpes
+
+	std::string describe(Character* c)
+	{
+		if (!c)
+			return "(ninguém)";
+		std::ostringstream o;
+		o << "'" << c->getName() << "' [" << raceName(c) << " / " << factionName(c) << "]"
+			<< (c->isPlayerCharacter() ? " (JOGADOR)" : "");
+		return o.str();
+	}
+
+	void dbg(const std::string& msg)
+	{
+		if (debug)
+			DebugLog("KenshiAchievements[debug]: " + msg);
+	}
+
 	// Quem do jogador derrubou a vítima? NULL se não foi o jogador.
 	Character* findPlayerAttacker(Character* victim)
 	{
 		Character* c = victim->lastGuyWhoDefeatedMe.getCharacter();
+		dbg("  lastGuyWhoDefeatedMe = " + describe(c));
 		if (c && c->isPlayerCharacter())
 			return c;
 
 		std::map<std::string, LastHit>::iterator it = lastPlayerHit.find(handleKey(victim));
-		if (it != lastPlayerHit.end() && GetTickCount() - it->second.tick <= HIT_MEMORY_MS)
+		if (it == lastPlayerHit.end())
+		{
+			dbg("  nenhum golpe do jogador lembrado nessa vítima");
+			return NULL;
+		}
+		std::ostringstream age;
+		age << (GetTickCount() - it->second.tick) << " ms atrás";
+		dbg("  último golpe do jogador: " + describe(it->second.attacker.getCharacter()) + ", " + age.str());
+		if (GetTickCount() - it->second.tick <= HIT_MEMORY_MS)
 		{
 			c = it->second.attacker.getCharacter();
 			if (c && c->isPlayerCharacter())
@@ -122,18 +153,42 @@ namespace
 
 	void onTakedown(Character* victim, bool kill)
 	{
-		if (!victim || victim->isPlayerCharacter())
+		if (!victim)
 			return;
+		dbg(std::string(kill ? "MORTE" : "KO") + " de " + describe(victim));
+		if (victim->isPlayerCharacter())
+		{
+			dbg("  ignorado: vítima é do jogador");
+			return;
+		}
 
 		boost::lock_guard<boost::mutex> g(lock);
 
 		std::string victimKey = handleKey(victim);
 		if (kill && !countedDeaths.insert(victimKey).second)
+		{
+			dbg("  ignorado: morte dessa vítima já contada");
 			return;
+		}
+		if (!kill)
+		{
+			DWORD now = GetTickCount();
+			std::map<std::string, DWORD>::iterator ko = lastKO.find(victimKey);
+			if (ko != lastKO.end() && now - ko->second < KO_DEDUPE_MS)
+			{
+				dbg("  ignorado: KO repetido da mesma vítima");
+				return;
+			}
+			lastKO[victimKey] = now;
+		}
 
 		Character* attacker = findPlayerAttacker(victim);
 		if (!attacker)
+		{
+			dbg("  NÃO contado: atacante do jogador não identificado");
 			return;
+		}
+		dbg("  CONTADO para " + describe(attacker));
 
 		std::string key = handleKey(attacker);
 		std::string name = attacker->getName();
@@ -148,6 +203,11 @@ namespace
 
 	void rememberHit(Character* victim, Character* attacker)
 	{
+		if (debug && debugHits < 30 && victim && attacker)
+		{
+			++debugHits;
+			dbg("golpe: " + describe(attacker) + " -> " + describe(victim));
+		}
 		if (!victim || !attacker || !attacker->isPlayerCharacter() || victim->isPlayerCharacter())
 			return;
 		boost::lock_guard<boost::mutex> g(lock);
@@ -163,6 +223,7 @@ namespace
 		Stats::reset();
 		lastPlayerHit.clear();
 		countedDeaths.clear();
+		lastKO.clear();
 	}
 
 	// ---------- hooks de combate ----------
@@ -171,6 +232,7 @@ namespace
 	void declareDead_hook(Character* self)
 	{
 		declareDead_orig(self);
+		dbg("declareDead() chamado");
 		onTakedown(self, true);
 	}
 
@@ -179,7 +241,15 @@ namespace
 	{
 		bool wasDown = self->unconcious || self->dead;
 		knockout_orig(self, skill01);
-		if (!wasDown && self->unconcious && !self->dead)
+		if (debug)
+		{
+			std::ostringstream o;
+			o << "knockout() em " << describe(self->me) << ": antes unconcious/dead=" << wasDown
+				<< ", depois unconcious=" << self->unconcious << " dead=" << self->dead;
+			dbg(o.str());
+		}
+		// O jogo só marca unconcious depois (fora desta chamada), então a chamada em si é o KO (#2).
+		if (!wasDown && !self->dead)
 			onTakedown(self->me, false);
 	}
 
@@ -272,6 +342,14 @@ namespace
 
 	MyGUI::Window* panel = NULL;
 	MyGUI::EditBox* panelText = NULL;
+	bool panelCloseRequested = false;
+
+	void onPanelButton(MyGUI::Window* sender, const std::string& name)
+	{
+		// Não destrói aqui: estamos dentro do evento do próprio widget. Fecha no próximo frame.
+		if (name == "close")
+			panelCloseRequested = true;
+	}
 	DWORD panelRefreshedAt = 0;
 	bool keyWasDown = false;
 
@@ -371,6 +449,7 @@ namespace
 		panelText->setEditReadOnly(true);
 		panelText->setEditMultiLine(true);
 		panelText->setEditWordWrap(true);
+		panel->eventWindowButtonPressed += MyGUI::newDelegate(onPanelButton);
 		panelRefreshedAt = 0; // força refresh
 	}
 
@@ -419,6 +498,13 @@ namespace
 	{
 		mainLoop_orig(self, time);
 
+		static bool loggedLoop = false;
+		if (!loggedLoop)
+		{
+			loggedLoop = true;
+			dbg("mainLoop ativo (UI ok)");
+		}
+
 		MyGUI::Gui* gui = MyGUI::Gui::getInstancePtr();
 		if (!gui)
 			return;
@@ -451,11 +537,19 @@ namespace
 			if (!unlocks[i].who.empty())
 				t.body += "\n(" + unlocks[i].who + ")";
 			toastQueue.push_back(t);
+			dbg("conquista liberada: " + unlocks[i].title);
 			log("Conquista", unlocks[i].title + " - " + unlocks[i].description);
 		}
 		if (!unlocks.empty())
 			playUnlockSound();
 		showNextToast(gui);
+
+		if (panelCloseRequested)
+		{
+			panelCloseRequested = false;
+			if (panel)
+				togglePanel(gui);
+		}
 
 		bool keyDown = (GetAsyncKeyState(panelKey) & 0x8000) != 0;
 		if (keyDown && !keyWasDown && gameHasFocus() && !modifierHeld() && !typingInTextBox())
@@ -494,6 +588,10 @@ __declspec(dllexport) void startPlugin()
 	for (size_t i = 0; i < errors.size(); ++i)
 		ErrorLog("KenshiAchievements: achievements.txt " + errors[i]);
 	loadSound(dir);
+
+	debug = Stats::setting("debug", "0") == "1";
+	if (debug)
+		DebugLog("KenshiAchievements: modo debug ligado");
 
 	std::string keyName = Stats::setting("tecla", "F6");
 	int key = parseKey(keyName);

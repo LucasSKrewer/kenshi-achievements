@@ -42,8 +42,11 @@ O mod segue o idioma escolhido no Kenshi (`language=` no `settings.cfg`):
 
 Quando alguém morre (`Character::declareDead`) ou cai inconsciente (`MedicalSystem::knockout`):
 
-1. `vítima->lastGuyWhoDefeatedMe`, se for personagem do jogador;
-2. senão, o último personagem do jogador que acertou a vítima (melee ou projétil) nos últimos 30 s.
+1. quem do grupo está executando nocaute/assassinato furtivo com a vítima como alvo (o golpe furtivo não fere);
+2. `vítima->lastGuyWhoDefeatedMe`, se for personagem do jogador;
+3. senão, o último personagem do jogador que feriu a vítima (`MedicalSystem::addWound`, melee ou projétil) nos últimos 30 s.
+
+KO sem atacante na hora fica pendente por até 3 s (o jogo costuma preencher o atacante logo depois).
 
 Vítimas do próprio grupo não contam. Uma morte conta uma vez só por vítima; um KO conta na chamada de
 `knockout()` com a vítima de pé (o jogo só marca "inconsciente" depois), com intervalo mínimo de 10 s
@@ -101,6 +104,9 @@ a contagem, as conquistas e o texto das duas abas.
 - Plugin carrega, hooks instalam, save/load dos contadores (tipo 4242) funciona.
 - Morte: `lastGuyWhoDefeatedMe` já vem preenchido em `declareDead` e atribui ao personagem certo.
 - Com o Genesis ativo (nenhum mod da Workshop tem DLL; raças/facções conferidas).
+- KO em luta: pelo último golpe do grupo (`addWound`) ou `lastGuyWhoDefeatedMe`, resolvido em até 3 s.
+- KO/assassinato furtivo: pela tarefa `STEALTH_KNOCKOUT`/`STEALTH_KILL` de quem está do grupo com a vítima como alvo.
+- Homônimos no grupo (dois "The Arbiter") ficam separados; o painel mostra a raça.
 
 Bugs e ideias: [issues](https://github.com/LucasSKrewer/kenshi-achievements/issues).
 

@@ -28,6 +28,8 @@ All notable changes to Kenshi Achievements. Versions follow [Semantic Versioning
   English on load, so those kills count toward achievements.
 - The X/Y summary counted unlocked ids that no longer exist in `achievements.txt`.
 - `heretic` matched Holy Nation Outlaws; now only The Holy Nation.
+- The F6 panel cut the text at 2048 characters (MyGUI's default limit), so the end of the
+  Achievements tab was missing. The limit is now raised.
 
 ### Documented
 - Removing the mod is safe: saves load normally without it. A save made while the mod is disabled

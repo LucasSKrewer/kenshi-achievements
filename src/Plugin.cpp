@@ -624,6 +624,8 @@ namespace
 		panelText->setEditWordWrap(true);
 		panelText->setVisibleVScroll(true);
 		panelText->setVisibleHScroll(false);
+		// A EditBox do MyGUI corta em 2048 caracteres por padrão; com 41 conquistas a aba já passa disso
+		panelText->setMaxTextLength(1000000);
 		panelLastText.clear();
 		panel->eventWindowButtonPressed += MyGUI::newDelegate(onPanelButton);
 		selectTab(currentTab);

@@ -52,5 +52,34 @@ beak_hunter   | race_kills:*Beak Thing      | 5  | Beak Hunter        | Kill 5 B
 shek_slayer   | race_kills:Shek             | 25 | Horn Breaker       | Kill 25 Shek.
 skeleton_bane | race_kills:*Skeleton*       | 10 | Scrapper           | Destroy 10 skeletons.
 
-heretic       | faction_kills:*Holy Nation* | 50 | Heretic            | Kill 50 members of the Holy Nation.
+heretic       | faction_kills:The Holy Nation | 50 | Heretic            | Kill 50 members of the Holy Nation.
 bandit_bane   | faction_kills:Dust Bandits  | 25 | Dust Settled       | Kill 25 Dust Bandits.
+
+# --- Base game: notable factions and creatures (#5) ---
+cannibal_hunter | faction_kills:Cannibals         | 50 | Cannibal Hunter    | Kill 50 Cannibals.
+fog_lifter      | faction_kills:Fogmen            | 25 | Fog Lifter         | Kill 25 Fogmen.
+skinned         | faction_kills:Skin Bandits      | 10 | Skin for Skin      | Kill 10 Skin Bandits.
+samurai_slayer  | faction_kills:United Cities     | 50 | Samurai Slayer     | Kill 50 members of the United Cities.
+crab_cracker    | faction_kills:Crab Raiders      | 20 | Crab Cracker       | Kill 20 Crab Raiders.
+reaver_bane     | faction_kills:Reavers           | 20 | Reaper of Reavers  | Kill 20 Reavers.
+hungry_no_more  | faction_kills:Starving Bandits  | 50 | Hungry No More     | Kill 50 Starving Bandits.
+ape_escape      | race_kills:*Gorillo             | 5  | Ape Escape         | Kill 5 Gorillos.
+leviathan       | race_kills:Leviathan            | 1  | Leviathan Slayer   | Kill a Leviathan.
+regicide        | race_kills:Hive Queen,Southern Hive Queen | 1 | Regicide | Kill a Hive Queen.
+bonedog_pack    | race_kills:*Bonedog*            | 25 | Pack Breaker       | Kill 25 Bonedogs.
+arachnophobia   | race_kills:*Spider*             | 25 | Arachnophobia      | Kill 25 spiders.
+fish_fry        | race_kills:*Fishman*            | 25 | Fish Fry           | Kill 25 Fishmen.
+beak_master     | race_kills:*Beak Thing          | 50 | Beak Master        | Kill 50 Beak Things.
+
+# --- Genesis (#6) — hidden automatically when Genesis isn't installed ---
+primordial       | race_kills:Primordial Hive*      | 10 | Primordial Purge | Kill 10 Primordial Hive.
+primordial_queen | race_kills:Primordial Hive Queen | 1  | Mother of None   | Kill a Primordial Hive Queen.
+mk4_scrapper     | race_kills:*MKIV                 | 10 | Latest Model     | Destroy 10 MKIV skeletons.
+giant_slayer     | race_kills:Giant                 | 1  | Giant Slayer     | Kill a Giant.
+broodmother      | race_kills:Broodmother           | 1  | Brood Ender      | Kill a Broodmother.
+oni              | race_kills:Oni Gorillo           | 1  | Demon Ape        | Kill an Oni Gorillo.
+beak_ogre        | race_kills:Winged Beak Ogre      | 1  | Ogre Down        | Kill a Winged Beak Ogre.
+wolf_hunter      | race_kills:*Wolf*,*Hound*        | 50 | Wolf Hunter      | Kill 50 wolves and hounds.
+wolven_order     | faction_kills:The Wolven Order   | 20 | Order Broken     | Kill 20 members of The Wolven Order.
+narko_cult       | faction_kills:Cult of Narko      | 20 | Heresy of Narko  | Kill 20 members of the Cult of Narko.
+ironsides        | race_kills:Ironsides             | 1  | Ironsides        | Destroy Ironsides.

@@ -48,7 +48,7 @@ int main(int argc, char** argv)
 	int ach = Stats::loadAchievements(mod + "achievements.txt", errors);
 	for (size_t i = 0; i < errors.size(); ++i)
 		printf("  erro: %s\n", errors[i].c_str());
-	check(ach == 16 && errors.empty(), "16 conquistas sem erro");
+	check(ach == 41 && errors.empty(), "41 conquistas sem erro");
 	check(Stats::setting("key", "?") == "F6", "@key = F6");
 
 	Stats::reset();
@@ -95,11 +95,17 @@ int main(int argc, char** argv)
 		races.insert("Skeleton MKI");     // *Skeleton* existe
 		factions.insert("Dust Bandits");
 		factions.insert("The Holy Nation");
-		std::vector<std::string> hidden = Stats::setKnownNames(races, factions);  // sem Beak Thing
-		check(hidden.size() == 1 && hidden[0] == "beak_hunter", "sem Beak Thing no jogo: só beak_hunter oculta");
+		std::vector<std::string> hidden = Stats::setKnownNames(races, factions);  // jogo "pelado": sem Genesis, sem Beak Thing
+		std::set<std::string> h(hidden.begin(), hidden.end());
+		check(h.count("beak_hunter") && h.count("primordial") && h.count("wolven_order") && h.count("giant_slayer"),
+			"sem o conteúdo: beak_hunter e as do Genesis ocultas");
+		check(!h.count("first_blood") && !h.count("shek_slayer") && !h.count("skeleton_bane") && !h.count("bandit_bane"),
+			"gerais e as de conteúdo presente continuam");
 		std::string r = Stats::achievementsReport();
 		check(r.find("Caçador de Bicudos") == std::string::npos, "oculta não aparece no painel");
-		check(r.find("Concluídas: 0/15") != std::string::npos, "total ignora a oculta (0/15)");
+		char esperado[64];
+		sprintf(esperado, "Concluídas: 0/%d", 41 - (int)hidden.size());
+		check(r.find(esperado) != std::string::npos, std::string("total ignora as ocultas (") + esperado + ")");
 
 		// Já liberada num save continua visível, mesmo com o conteúdo ausente
 		std::map<std::string, int> ints;
@@ -109,7 +115,8 @@ int main(int argc, char** argv)
 		Stats::importFrom(ints, strs);
 		r = Stats::achievementsReport();
 		check(r.find("[X] Caçador de Bicudos") != std::string::npos, "liberada continua visível");
-		check(r.find("Concluídas: 1/16") != std::string::npos, "resumo ignora id que não existe mais (1/16)");
+		sprintf(esperado, "Concluídas: 1/%d", 41 - (int)hidden.size() + 1);
+		check(r.find(esperado) != std::string::npos, std::string("resumo ignora id que não existe mais (") + esperado + ")");
 
 		// Nomes vazios (dados não lidos) = nada oculto
 		hidden = Stats::setKnownNames(std::set<std::string>(), std::set<std::string>());

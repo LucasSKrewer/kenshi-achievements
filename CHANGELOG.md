@@ -26,7 +26,7 @@ All notable changes to Kenshi Achievements. Versions follow [Semantic Versioning
   uses every name entry in `gamedata.po` (141 → 2050 names), with race/faction entries taking priority.
 - Old saves with translated race/faction keys (before 1.0's language support) are normalized to
   English on load, so those kills count toward achievements.
-- The X/Y summary ignored nothing: unlocked ids no longer in `achievements.txt` inflated it.
+- The X/Y summary counted unlocked ids that no longer exist in `achievements.txt`.
 - `heretic` matched Holy Nation Outlaws; now only The Holy Nation.
 
 ### Documented

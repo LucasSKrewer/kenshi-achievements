@@ -4,6 +4,31 @@ All notable changes to Kenshi Achievements. Versions follow [Semantic Versioning
 
 ## [Unreleased]
 
+### Added
+- **25 new achievements**:
+  - 14 from the base game ([#5](https://github.com/LucasSKrewer/kenshi-achievements/issues/5)):
+    Cannibals, Fogmen, Skin Bandits, United Cities, Crab Raiders, Reavers, Starving Bandits,
+    Gorillos, Leviathan, Hive Queen, Bonedogs, spiders, Fishmen, Beak Master;
+  - 11 for Genesis ([#6](https://github.com/LucasSKrewer/kenshi-achievements/issues/6)): Primordial
+    Hive, MKIV skeletons, Giant, Broodmother, Oni Gorillo, Winged Beak Ogre, wolves, The Wolven Order,
+    Cult of Narko, Ironsides.
+- **Achievements for content that isn't installed are hidden**
+  ([#7](https://github.com/LucasSKrewer/kenshi-achievements/issues/7)): the mod reads the races and
+  factions in the loaded game data, and an achievement whose race/faction matches none of them
+  disappears from the panel and from the X/Y total. Genesis achievements vanish without Genesis;
+  already unlocked ones stay.
+- **Secret achievements** ([#8](https://github.com/LucasSKrewer/kenshi-achievements/issues/8)): a `?`
+  before the id shows `[?] ???` until unlocked. Leviathan, Regicide and Ironsides are secret.
+
+### Fixed
+- Race names that the game translates through non-race entries (e.g. Leviathan → "Leviatã", Swamp
+  Raptor) weren't mapped back to English, so they didn't count and could be hidden. The name map now
+  uses every name entry in `gamedata.po` (141 → 2050 names), with race/faction entries taking priority.
+- Old saves with translated race/faction keys (before 1.0's language support) are normalized to
+  English on load, so those kills count toward achievements.
+- The X/Y summary ignored nothing: unlocked ids no longer in `achievements.txt` inflated it.
+- `heretic` matched Holy Nation Outlaws; now only The Holy Nation.
+
 ### Documented
 - Removing the mod is safe: saves load normally without it. A save made while the mod is disabled
   loses the counters, because Kenshi drops the unknown record on save. Older saves keep theirs

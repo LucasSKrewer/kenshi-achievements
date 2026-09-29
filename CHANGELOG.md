@@ -2,6 +2,13 @@
 
 All notable changes to Kenshi Achievements. Versions follow [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Documented
+- Removing the mod is safe: saves load normally without it. A save made while the mod is disabled
+  loses the counters, because Kenshi drops the unknown record on save. Older saves keep theirs
+  ([#10](https://github.com/LucasSKrewer/kenshi-achievements/issues/10)).
+
 ## [1.0.0] — 2026-09-27
 
 First public release — [Steam Workshop](https://steamcommunity.com/sharedfiles/filedetails/?id=3809336824)

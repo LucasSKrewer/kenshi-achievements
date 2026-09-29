@@ -108,6 +108,7 @@ a contagem, as conquistas e o texto das duas abas.
 - Plugin carrega, hooks instalam, save/load dos contadores (tipo 4242) funciona.
 - Morte: `lastGuyWhoDefeatedMe` já vem preenchido em `declareDead` e atribui ao personagem certo.
 - Com o Genesis ativo (nenhum mod da Workshop tem DLL; raças/facções conferidas).
+- **Remover o mod é seguro:** o save carrega normal sem ele. Mas se salvar com o mod desativado, esse save novo perde os contadores (o Kenshi descarta o registro desconhecido); os saves antigos mantêm.
 - KO em luta: pelo último golpe do grupo (`addWound`) ou `lastGuyWhoDefeatedMe`, resolvido em até 3 s.
 - KO/assassinato furtivo: pela tarefa `STEALTH_KNOCKOUT`/`STEALTH_KILL` de quem está do grupo com a vítima como alvo.
 - Homônimos no grupo (dois "The Arbiter") ficam separados; o painel mostra a raça.

@@ -669,6 +669,39 @@ namespace
 		return w && w->castType<MyGUI::EditBox>(false) && w != panelText;
 	}
 
+	// Uma vez, com o mundo carregado: quais raças/facções existem nos dados (jogo + mods ativos).
+	// Conquistas de mods ausentes ficam ocultas (#7). Os dados não mudam entre saves.
+	bool knownNamesChecked = false;
+
+	void checkKnownNames()
+	{
+		if (knownNamesChecked || !ou)
+			return;
+		knownNamesChecked = true;
+		std::set<std::string> races, factions;
+		for (auto it = ou->gamedata.gamedataSID.begin(); it != ou->gamedata.gamedataSID.end(); ++it)
+		{
+			GameData* d = it->second;
+			if (!d)
+				continue;
+			if (d->type == RACE)
+				races.insert(Lang::toEnglish(d->name));
+			else if (d->type == FACTION)
+				factions.insert(Lang::toEnglish(d->name));
+		}
+		std::vector<std::string> hidden;
+		{
+			boost::lock_guard<boost::mutex> g(lock);
+			hidden = Stats::setKnownNames(races, factions);
+		}
+		std::ostringstream o;
+		o << "KenshiAchievements: " << races.size() << " races, " << factions.size() << " factions in game data; "
+			<< hidden.size() << " achievement(s) hidden (content not installed)";
+		for (size_t i = 0; i < hidden.size(); ++i)
+			o << (i ? ", " : ": ") << hidden[i];
+		DebugLog(o.str());
+	}
+
 	void (*mainLoop_orig)(GameWorld*, float) = NULL;
 	void mainLoop_hook(GameWorld* self, float time)
 	{
@@ -682,6 +715,7 @@ namespace
 		}
 
 		resolvePendingKOs();
+		checkKnownNames();
 
 		MyGUI::Gui* gui = MyGUI::Gui::getInstancePtr();
 		if (!gui)

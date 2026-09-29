@@ -87,6 +87,36 @@ int main(int argc, char** argv)
 		Stats::popUnlocks();
 	}
 
+	// #7: conquistas de conteúdo ausente ficam ocultas
+	{
+		Stats::reset();
+		std::set<std::string> races, factions;
+		races.insert("Shek");
+		races.insert("Skeleton MKI");     // *Skeleton* existe
+		factions.insert("Dust Bandits");
+		factions.insert("The Holy Nation");
+		std::vector<std::string> hidden = Stats::setKnownNames(races, factions);  // sem Beak Thing
+		check(hidden.size() == 1 && hidden[0] == "beak_hunter", "sem Beak Thing no jogo: só beak_hunter oculta");
+		std::string r = Stats::achievementsReport();
+		check(r.find("Caçador de Bicudos") == std::string::npos, "oculta não aparece no painel");
+		check(r.find("Concluídas: 0/15") != std::string::npos, "total ignora a oculta (0/15)");
+
+		// Já liberada num save continua visível, mesmo com o conteúdo ausente
+		std::map<std::string, int> ints;
+		std::map<std::string, std::string> strs;
+		ints["a:beak_hunter"] = 1;
+		ints["a:id_que_nao_existe_mais"] = 1;
+		Stats::importFrom(ints, strs);
+		r = Stats::achievementsReport();
+		check(r.find("[X] Caçador de Bicudos") != std::string::npos, "liberada continua visível");
+		check(r.find("Concluídas: 1/16") != std::string::npos, "resumo ignora id que não existe mais (1/16)");
+
+		// Nomes vazios (dados não lidos) = nada oculto
+		hidden = Stats::setKnownNames(std::set<std::string>(), std::set<std::string>());
+		check(hidden.empty(), "sem dados do jogo, nada fica oculto");
+		Stats::reset();
+	}
+
 	printf("\n===== aba Estatísticas (The Arbiter selecionado) =====\n%s", stats.c_str());
 	printf("===== aba Conquistas =====\n%s", achs.c_str());
 	printf("===== nenhum selecionado =====\n%s", Stats::statsReport("", "").c_str());

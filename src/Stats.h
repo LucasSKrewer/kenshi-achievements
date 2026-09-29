@@ -29,7 +29,8 @@ namespace Stats
 		int target;
 		std::string title;
 		std::string description;
-		Achievement() : target(0) {}
+		bool available; // false = cita raça/facção que não existe no jogo carregado (mod ausente): fica oculta
+		Achievement() : target(0), available(true) {}
 	};
 
 	struct Unlock
@@ -42,6 +43,11 @@ namespace Stats
 	// Carrega achievements.txt. Retorna quantas foram lidas; erros vão pra `errors`.
 	// Linhas "@chave = valor" viram configurações (ver setting()).
 	int loadAchievements(const std::string& path, std::vector<std::string>& errors);
+
+	// Nomes em inglês das raças/facções que existem nos dados carregados (jogo + mods). Conquistas
+	// race_*/faction_* sem nenhum nome correspondente ficam ocultas (ex.: conquistas do Genesis sem
+	// o Genesis instalado). Retorna os ids ocultados.
+	std::vector<std::string> setKnownNames(const std::set<std::string>& races, const std::set<std::string>& factions);
 
 	// Configuração lida do achievements.txt, ou `fallback` se ausente.
 	std::string setting(const std::string& key, const std::string& fallback);

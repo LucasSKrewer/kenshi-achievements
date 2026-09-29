@@ -69,7 +69,7 @@ namespace Stats
 
 		// Soma as entradas cujo nome casa com o padrão. Vírgula separa alternativas:
 		// "Dust Bandits,Bandidos da Poeira" ou "*Skeleton*,Soldierbot".
-		int lookup(const std::map<std::string, int>& m, const std::string& pattern)
+		std::vector<std::string> splitAlternatives(const std::string& pattern)
 		{
 			std::vector<std::string> alts;
 			std::stringstream ss(pattern);
@@ -80,6 +80,22 @@ namespace Stats
 				if (!part.empty())
 					alts.push_back(part);
 			}
+			return alts;
+		}
+
+		bool anyNameMatches(const std::string& pattern, const std::set<std::string>& names)
+		{
+			std::vector<std::string> alts = splitAlternatives(pattern);
+			for (std::set<std::string>::const_iterator it = names.begin(); it != names.end(); ++it)
+				for (size_t i = 0; i < alts.size(); ++i)
+					if (globMatch(alts[i].c_str(), it->c_str()))
+						return true;
+			return false;
+		}
+
+		int lookup(const std::map<std::string, int>& m, const std::string& pattern)
+		{
+			std::vector<std::string> alts = splitAlternatives(pattern);
 			int total = 0;
 			for (std::map<std::string, int>::const_iterator it = m.begin(); it != m.end(); ++it)
 			{
@@ -429,11 +445,42 @@ namespace Stats
 		return o.str();
 	}
 
+	std::vector<std::string> setKnownNames(const std::set<std::string>& races, const std::set<std::string>& factions)
+	{
+		std::vector<std::string> hidden;
+		for (size_t i = 0; i < achievements.size(); ++i)
+		{
+			Achievement& a = achievements[i];
+			if (a.metric.compare(0, 5, "race_") == 0)
+				a.available = races.empty() || anyNameMatches(a.arg, races);
+			else if (a.metric.compare(0, 8, "faction_") == 0)
+				a.available = factions.empty() || anyNameMatches(a.arg, factions);
+			else
+				a.available = true;
+			if (!a.available)
+				hidden.push_back(a.id);
+		}
+		return hidden;
+	}
+
 	std::string achievementsReport()
 	{
+		// Visível = existe no jogo carregado, ou já foi liberada neste save (continua aparecendo
+		// mesmo se o mod de origem saiu depois).
+		int total = 0, done = 0;
+		for (size_t i = 0; i < achievements.size(); ++i)
+		{
+			bool unlockedHere = unlocked.count(achievements[i].id) != 0;
+			if (achievements[i].available || unlockedHere)
+			{
+				++total;
+				if (unlockedHere)
+					++done;
+			}
+		}
 		std::ostringstream o;
 		o << Lang::fill(Lang::fill(Lang::tr("ach.summary", "Completed: {done}/{total}"),
-			"done", (int)unlocked.size()), "total", (int)achievements.size()) << "\n\n";
+			"done", done), "total", total) << "\n\n";
 
 		// Concluídas primeiro, depois as pendentes com progresso
 		for (int pass = 0; pass < 2; ++pass)
@@ -445,6 +492,8 @@ namespace Stats
 				const Achievement& a = achievements[i];
 				bool done = unlocked.count(a.id) != 0;
 				if (done != (pass == 0))
+					continue;
+				if (!a.available && !done)
 					continue;
 				++shown;
 				if (done)

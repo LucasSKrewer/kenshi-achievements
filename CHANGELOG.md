@@ -17,6 +17,10 @@ All notable changes to Kenshi Achievements. Versions follow [Semantic Versioning
   factions in the loaded game data, and an achievement whose race/faction matches none of them
   disappears from the panel and from the X/Y total. Genesis achievements vanish without Genesis;
   already unlocked ones stay.
+- **Upper tiers**, based on the real pace (~90 kills per session with Genesis)
+  ([#9](https://github.com/LucasSKrewer/kenshi-achievements/issues/9)): Myth (2500 kills), Walking Legend
+  (one character with 200), Scrap Yard (100 skeletons), Exterminator (100 spiders). Existing targets are
+  unchanged, so nobody loses an unlocked achievement.
 - **Secret achievements** ([#8](https://github.com/LucasSKrewer/kenshi-achievements/issues/8)): a `?`
   before the id shows `[?] ???` until unlocked. Leviathan, Regicide and Ironsides are secret.
 

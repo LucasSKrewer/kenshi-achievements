@@ -39,6 +39,7 @@ killer_10     | kills      | 10   | Dirty Hands          | 10 kills.
 killer_100    | kills      | 100  | Butcher              | 100 kills.
 killer_500    | kills      | 500  | Reaper               | 500 kills.
 killer_1000   | kills      | 1000 | Legend of Kenshi     | 1000 kills.
+killer_2500   | kills      | 2500 | Myth                 | 2500 kills.
 
 first_ko      | kos        | 1    | Good Night           | Knock out your first enemy.
 ko_50         | kos        | 50   | Knockout Artist      | 50 knockouts.
@@ -48,10 +49,12 @@ takedown_1000 | takedowns  | 1000 | Nobody Stays Standing | 1000 kills + knockou
 
 solo_50       | char_kills | 50   | One-Man Army         | A single character with 50 kills.
 solo_ko_100   | char_kos   | 100  | Specialist           | A single character with 100 knockouts.
+solo_200      | char_kills | 200  | Walking Legend       | A single character with 200 kills.
 
 beak_hunter   | race_kills:*Beak Thing      | 5  | Beak Hunter        | Kill 5 Beak Things.
 shek_slayer   | race_kills:Shek             | 25 | Horn Breaker       | Kill 25 Shek.
 skeleton_bane | race_kills:*Skeleton*       | 10 | Scrapper           | Destroy 10 skeletons.
+skeleton_scrapyard | race_kills:*Skeleton* | 100 | Scrap Yard   | Destroy 100 skeletons.
 
 heretic       | faction_kills:The Holy Nation | 50 | Heretic            | Kill 50 members of the Holy Nation.
 bandit_bane   | faction_kills:Dust Bandits  | 25 | Dust Settled       | Kill 25 Dust Bandits.
@@ -69,6 +72,7 @@ ape_escape      | race_kills:*Gorillo             | 5  | Ape Escape         | Ki
 ?regicide       | race_kills:Hive Queen,Southern Hive Queen | 1 | Regicide | Kill a Hive Queen.
 bonedog_pack    | race_kills:*Bonedog*            | 25 | Pack Breaker       | Kill 25 Bonedogs.
 arachnophobia   | race_kills:*Spider*             | 25 | Arachnophobia      | Kill 25 spiders.
+spider_exterminator | race_kills:*Spider* | 100 | Exterminator | Kill 100 spiders.
 fish_fry        | race_kills:*Fishman*            | 25 | Fish Fry           | Kill 25 Fishmen.
 beak_master     | race_kills:*Beak Thing          | 50 | Beak Master        | Kill 50 Beak Things.
 

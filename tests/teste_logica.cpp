@@ -34,6 +34,7 @@ int main(int argc, char** argv)
 	check(Lang::toEnglish("Leviatã") == "Leviathan", "Leviatã -> Leviathan (só tem entrada ANIMAL_CHARACTER no .po)");
 	check(Lang::toEnglish("Raptor do Pântano") == "Swamp Raptor", "Raptor do Pântano -> Swamp Raptor (visto no jogo como raça)");
 	check(Lang::toEnglish("Tartaruga do Pântano") == "Swamp Turtle", "Tartaruga do Pântano -> Swamp Turtle (RACE)");
+	printf("  Bicudo -> '%s'\n", Lang::toEnglish("Bicudo").c_str());
 	check(Lang::toEnglish("Skeleton Screamer MKII") == "Skeleton Screamer MKII", "nome do Genesis sem tradução passa direto");
 	printf("  Nação Sagrada? -> '%s'\n", Lang::toEnglish("Nação Sagrada").c_str());
 
@@ -51,7 +52,7 @@ int main(int argc, char** argv)
 	int ach = Stats::loadAchievements(mod + "achievements.txt", errors);
 	for (size_t i = 0; i < errors.size(); ++i)
 		printf("  erro: %s\n", errors[i].c_str());
-	check(ach == 41 && errors.empty(), "41 conquistas sem erro");
+	check(ach == 45 && errors.empty(), "45 conquistas sem erro");
 	check(Stats::setting("key", "?") == "F6", "@key = F6");
 
 	Stats::reset();
@@ -107,7 +108,7 @@ int main(int argc, char** argv)
 		std::string r = Stats::achievementsReport();
 		check(r.find("Caçador de Bicudos") == std::string::npos, "oculta não aparece no painel");
 		char esperado[64];
-		sprintf(esperado, "Concluídas: 0/%d", 41 - (int)hidden.size());
+		sprintf(esperado, "Concluídas: 0/%d", 45 - (int)hidden.size());
 		check(r.find(esperado) != std::string::npos, std::string("total ignora as ocultas (") + esperado + ")");
 
 		// Já liberada num save continua visível, mesmo com o conteúdo ausente
@@ -118,7 +119,7 @@ int main(int argc, char** argv)
 		Stats::importFrom(ints, strs);
 		r = Stats::achievementsReport();
 		check(r.find("[X] Caçador de Bicudos") != std::string::npos, "liberada continua visível");
-		sprintf(esperado, "Concluídas: 1/%d", 41 - (int)hidden.size() + 1);
+		sprintf(esperado, "Concluídas: 1/%d", 45 - (int)hidden.size() + 1);
 		check(r.find(esperado) != std::string::npos, std::string("resumo ignora id que não existe mais (") + esperado + ")");
 
 		// Nomes vazios (dados não lidos) = nada oculto

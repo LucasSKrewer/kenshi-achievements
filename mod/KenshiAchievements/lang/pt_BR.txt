@@ -109,3 +109,13 @@ narko_cult.title = Heresia de Narko
 narko_cult.desc = Mate 20 membros do Culto de Narko.
 ironsides.title = Couraçado
 ironsides.desc = Destrua o Ironsides.
+
+# --- Degraus de cima (#9, pelo ritmo real: ~90 kills por sessão) ---
+killer_2500.title = Mito
+killer_2500.desc = 2500 mortes.
+solo_200.title = Lenda Viva
+solo_200.desc = Um único personagem com 200 mortes.
+skeleton_scrapyard.title = Ferro-Velho
+skeleton_scrapyard.desc = Destrua 100 esqueletos.
+spider_exterminator.title = Exterminador
+spider_exterminator.desc = Mate 100 aranhas.

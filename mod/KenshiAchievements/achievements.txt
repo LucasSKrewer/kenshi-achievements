@@ -13,6 +13,7 @@
 #   *   matches anything — useful with mods like Genesis that add variants ("*Skeleton*" = Skeleton MKI, MKII...)
 #   ,   separates alternatives — "Dust Bandits,Hungry Bandits"
 #
+# A leading ? on the id makes it a secret achievement: shown as ??? until unlocked ("?regicide | ...").
 # Title/description here are the English default. Translations go in lang/<language>.txt
 # (<id>.title / <id>.desc). Never change an `id` after release: saves track unlocks by id.
 
@@ -64,8 +65,8 @@ crab_cracker    | faction_kills:Crab Raiders      | 20 | Crab Cracker       | Ki
 reaver_bane     | faction_kills:Reavers           | 20 | Reaper of Reavers  | Kill 20 Reavers.
 hungry_no_more  | faction_kills:Starving Bandits  | 50 | Hungry No More     | Kill 50 Starving Bandits.
 ape_escape      | race_kills:*Gorillo             | 5  | Ape Escape         | Kill 5 Gorillos.
-leviathan       | race_kills:Leviathan            | 1  | Leviathan Slayer   | Kill a Leviathan.
-regicide        | race_kills:Hive Queen,Southern Hive Queen | 1 | Regicide | Kill a Hive Queen.
+?leviathan      | race_kills:Leviathan            | 1  | Leviathan Slayer   | Kill a Leviathan.
+?regicide       | race_kills:Hive Queen,Southern Hive Queen | 1 | Regicide | Kill a Hive Queen.
 bonedog_pack    | race_kills:*Bonedog*            | 25 | Pack Breaker       | Kill 25 Bonedogs.
 arachnophobia   | race_kills:*Spider*             | 25 | Arachnophobia      | Kill 25 spiders.
 fish_fry        | race_kills:*Fishman*            | 25 | Fish Fry           | Kill 25 Fishmen.
@@ -82,4 +83,4 @@ beak_ogre        | race_kills:Winged Beak Ogre      | 1  | Ogre Down        | Ki
 wolf_hunter      | race_kills:*Wolf*,*Hound*        | 50 | Wolf Hunter      | Kill 50 wolves and hounds.
 wolven_order     | faction_kills:The Wolven Order   | 20 | Order Broken     | Kill 20 members of The Wolven Order.
 narko_cult       | faction_kills:Cult of Narko      | 20 | Heresy of Narko  | Kill 20 members of the Cult of Narko.
-ironsides        | race_kills:Ironsides             | 1  | Ironsides        | Destroy Ironsides.
+?ironsides       | race_kills:Ironsides             | 1  | Ironsides        | Destroy Ironsides.

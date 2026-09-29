@@ -272,6 +272,11 @@ namespace Stats
 
 			Achievement a;
 			a.id = f[0];
+			if (!a.id.empty() && a.id[0] == '?')
+			{
+				a.secret = true;
+				a.id = trim(a.id.substr(1)); // o id salvo no save não leva o '?'
+			}
 			std::string metric = f[1];
 			size_t colon = metric.find(':');
 			if (colon != std::string::npos)
@@ -502,6 +507,12 @@ namespace Stats
 				}
 				else
 				{
+					if (a.secret)
+					{
+						// Secreta: nada de título, descrição ou progresso até liberar
+						o << "[?] ???  " << Lang::tr("ach.secret", "(secret achievement)") << "\n";
+						continue;
+					}
 					std::string who;
 					int v = (std::min)(metricValue(a, who), a.target);
 					o << "[ ] " << title(a) << "  (" << v << "/" << a.target << ")\n";

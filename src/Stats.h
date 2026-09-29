@@ -30,7 +30,8 @@ namespace Stats
 		std::string title;
 		std::string description;
 		bool available; // false = cita raça/facção que não existe no jogo carregado (mod ausente): fica oculta
-		Achievement() : target(0), available(true) {}
+		bool secret;    // "?id" no achievements.txt: aparece como ??? até ser liberada
+		Achievement() : target(0), available(true), secret(false) {}
 	};
 
 	struct Unlock

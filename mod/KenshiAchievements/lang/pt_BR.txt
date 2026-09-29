@@ -12,6 +12,7 @@ stats.none = (ninguém ainda)
 
 ach.summary = Concluídas: {done}/{total}
 ach.done = --- Concluídas ---
+ach.secret = (conquista secreta)
 ach.pending = --- Em andamento ---
 
 toast.title = Conquista desbloqueada!

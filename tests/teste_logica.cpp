@@ -124,6 +124,29 @@ int main(int argc, char** argv)
 		Stats::reset();
 	}
 
+	// #8: conquistas secretas
+	{
+		Stats::reset();
+		std::string r = Stats::achievementsReport();
+		check(r.find("Regicídio") == std::string::npos && r.find("Mate uma Rainha da Colônia.") == std::string::npos,
+			"secreta pendente não revela título nem descrição");
+		check(r.find("[?] ???  (conquista secreta)") != std::string::npos, "secreta aparece como ???");
+		Stats::recordKill("hX", "Fuu", "Greenlander", "Hive Queen", "Western Hive");
+		std::vector<Stats::Unlock> un = Stats::popUnlocks();
+		bool gotRegicide = false;
+		for (size_t i = 0; i < un.size(); ++i)
+			if (un[i].title == "Regicídio")
+				gotRegicide = true;
+		check(gotRegicide, "secreta libera com título normal (Regicídio)");
+		r = Stats::achievementsReport();
+		check(r.find("[X] Regicídio") != std::string::npos, "liberada aparece com o nome");
+		std::map<std::string, int> ints;
+		std::map<std::string, std::string> strs;
+		Stats::exportTo(ints, strs);
+		check(ints.count("a:regicide") == 1 && ints.count("a:?regicide") == 0, "id salvo sem o '?'");
+		Stats::reset();
+	}
+
 	printf("\n===== aba Estatísticas (The Arbiter selecionado) =====\n%s", stats.c_str());
 	printf("===== aba Conquistas =====\n%s", achs.c_str());
 	printf("===== nenhum selecionado =====\n%s", Stats::statsReport("", "").c_str());

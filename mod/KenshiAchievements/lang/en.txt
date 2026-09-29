@@ -16,6 +16,7 @@ stats.none = (nobody yet)
 
 ach.summary = Completed: {done}/{total}
 ach.done = --- Completed ---
+ach.secret = (secret achievement)
 ach.pending = --- In progress ---
 
 toast.title = Achievement unlocked!

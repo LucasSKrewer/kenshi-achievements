@@ -34,7 +34,7 @@ int main(int argc, char** argv)
 	check(Lang::toEnglish("Leviatã") == "Leviathan", "Leviatã -> Leviathan (só tem entrada ANIMAL_CHARACTER no .po)");
 	check(Lang::toEnglish("Raptor do Pântano") == "Swamp Raptor", "Raptor do Pântano -> Swamp Raptor (visto no jogo como raça)");
 	check(Lang::toEnglish("Tartaruga do Pântano") == "Swamp Turtle", "Tartaruga do Pântano -> Swamp Turtle (RACE)");
-	printf("  Bicudo -> '%s'\n", Lang::toEnglish("Bicudo").c_str());
+	check(Lang::toEnglish("Bicudo") == "Beak Thing", "Bicudo -> Beak Thing (visto no save do jogo)");
 	check(Lang::toEnglish("Skeleton Screamer MKII") == "Skeleton Screamer MKII", "nome do Genesis sem tradução passa direto");
 	printf("  Nação Sagrada? -> '%s'\n", Lang::toEnglish("Nação Sagrada").c_str());
 

@@ -31,6 +31,9 @@ int main(int argc, char** argv)
 	check(Lang::toEnglish("Camponês") == "Greenlander", "Camponês -> Greenlander");
 	check(Lang::toEnglish("Beduíno") == "Scorchlander", "Beduíno -> Scorchlander");
 	check(Lang::toEnglish("Shek") == "Shek", "Shek continua Shek");
+	check(Lang::toEnglish("Leviatã") == "Leviathan", "Leviatã -> Leviathan (só tem entrada ANIMAL_CHARACTER no .po)");
+	check(Lang::toEnglish("Raptor do Pântano") == "Swamp Raptor", "Raptor do Pântano -> Swamp Raptor (visto no jogo como raça)");
+	check(Lang::toEnglish("Tartaruga do Pântano") == "Swamp Turtle", "Tartaruga do Pântano -> Swamp Turtle (RACE)");
 	check(Lang::toEnglish("Skeleton Screamer MKII") == "Skeleton Screamer MKII", "nome do Genesis sem tradução passa direto");
 	printf("  Nação Sagrada? -> '%s'\n", Lang::toEnglish("Nação Sagrada").c_str());
 
@@ -121,6 +124,18 @@ int main(int argc, char** argv)
 		// Nomes vazios (dados não lidos) = nada oculto
 		hidden = Stats::setKnownNames(std::set<std::string>(), std::set<std::string>());
 		check(hidden.empty(), "sem dados do jogo, nada fica oculto");
+		Stats::reset();
+	}
+
+	// Save antigo com nome traduzido + nome em inglês: normaliza e soma
+	{
+		std::map<std::string, int> ints;
+		std::map<std::string, std::string> strs;
+		ints["f.k:Bandidos da Poeira"] = 3;
+		ints["f.k:Dust Bandits"] = 2;
+		Stats::importFrom(ints, strs);
+		std::string r = Stats::achievementsReport();
+		check(r.find("Poeira Assentada  (5/25)") != std::string::npos, "save antigo: Bandidos da Poeira + Dust Bandits = 5/25");
 		Stats::reset();
 	}
 

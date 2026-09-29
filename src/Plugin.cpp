@@ -809,7 +809,7 @@ __declspec(dllexport) void startPlugin()
 		: Lang::loadGameNames(gameDir + "locale\\" + lang + "\\gamedata.po");
 	std::ostringstream lo;
 	lo << "KenshiAchievements: game language '" << (lang.empty() ? "?" : lang) << "', texts '" << used
-		<< "', " << names << " race/faction names mapped to English";
+		<< "', " << names << " translated names mapped to English";
 	DebugLog(lo.str());
 
 	// @key (ou @tecla, nome antigo)

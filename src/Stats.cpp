@@ -374,10 +374,11 @@ namespace Stats
 			else if (k == "total.o") totalKOs = v;
 			else if (startsWith(k, P_CHAR_KILLS, rest)) chars[rest].kills = v;
 			else if (startsWith(k, P_CHAR_KOS, rest)) chars[rest].kos = v;
-			else if (startsWith(k, P_RACE_KILLS, rest)) killsByRace[rest] = v;
-			else if (startsWith(k, P_RACE_KOS, rest)) kosByRace[rest] = v;
-			else if (startsWith(k, P_FACTION_KILLS, rest)) killsByFaction[rest] = v;
-			else if (startsWith(k, P_FACTION_KOS, rest)) kosByFaction[rest] = v;
+			// Saves antigos podem ter nomes traduzidos ("Bandidos da Poeira"): leva pro inglês e soma
+			else if (startsWith(k, P_RACE_KILLS, rest)) killsByRace[Lang::toEnglish(rest)] += v;
+			else if (startsWith(k, P_RACE_KOS, rest)) kosByRace[Lang::toEnglish(rest)] += v;
+			else if (startsWith(k, P_FACTION_KILLS, rest)) killsByFaction[Lang::toEnglish(rest)] += v;
+			else if (startsWith(k, P_FACTION_KOS, rest)) kosByFaction[Lang::toEnglish(rest)] += v;
 			else if (startsWith(k, P_UNLOCKED, rest)) unlocked.insert(rest);
 		}
 		for (std::map<std::string, std::string>::const_iterator it = strs.begin(); it != strs.end(); ++it)

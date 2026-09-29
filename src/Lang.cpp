@@ -127,6 +127,11 @@ namespace Lang
 	}
 
 	// Entradas do .po:  msgctxt "RACE,Greenlander,"  msgid "Greenlander"  msgstr "Camponês"
+	//
+	// O Kenshi traduz o nome pelo texto em inglês, qualquer que seja o tipo: a raça "Leviathan" só tem
+	// entrada ANIMAL_CHARACTER no .po e mesmo assim chega como "Leviatã". Por isso vale toda entrada
+	// de NOME ("TIPO,Nome," com msgid == Nome; descrições têm um 3º campo), e RACE/FACTION têm
+	// prioridade se o mesmo texto traduzido vier de mais de um nome.
 	int loadGameNames(const std::string& poPath)
 	{
 		english.clear();
@@ -134,6 +139,7 @@ namespace Lang
 		if (!in)
 			return 0;
 
+		std::map<std::string, bool> fromRaceOrFaction; // tradução -> veio de RACE/FACTION
 		std::string line, ctx, id, str, *current = NULL;
 		int n = 0;
 		for (bool more = true; more;)
@@ -144,10 +150,24 @@ namespace Lang
 			if (startsEntry && !ctx.empty())
 			{
 				// Fecha a entrada anterior
-				if ((startsWith(ctx, "RACE,") || startsWith(ctx, "FACTION,")) && !id.empty() && !str.empty() && str != id)
+				size_t comma = ctx.find(',');
+				bool isNameEntry = comma != std::string::npos && !id.empty()
+					&& ctx.compare(comma + 1, std::string::npos, id + ",") == 0;
+				if (isNameEntry && !str.empty() && str != id)
 				{
-					if (english.insert(std::make_pair(str, id)).second)
+					bool priority = startsWith(ctx, "RACE,") || startsWith(ctx, "FACTION,");
+					std::map<std::string, std::string>::iterator e = english.find(str);
+					if (e == english.end())
+					{
+						english[str] = id;
+						fromRaceOrFaction[str] = priority;
 						++n;
+					}
+					else if (priority && !fromRaceOrFaction[str])
+					{
+						e->second = id; // RACE/FACTION vence um nome de outro tipo
+						fromRaceOrFaction[str] = true;
+					}
 				}
 				ctx.clear();
 				id.clear();

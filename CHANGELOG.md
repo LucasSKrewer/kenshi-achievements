@@ -11,6 +11,9 @@ All notable changes to Kenshi Achievements. Versions follow [Semantic Versioning
   - if it was downed by a creature or NPC outside your squad, it doesn't count for you.
 
   If the victim got back up and died later in a new fight, the normal rule applies.
+- **Knockouts in regular fights now count.** Going down from damage doesn't go through the game's
+  knockout function, which only caught stealth knockouts, so most combat KOs were missed. The mod
+  now notices when a victim your squad recently hit goes down, and credits whoever hit it last.
 
 ## [1.1.0] — 2026-09-29
 

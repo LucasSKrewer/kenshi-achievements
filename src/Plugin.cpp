@@ -71,8 +71,10 @@ namespace
 	struct LastHit
 	{
 		hand attacker;
+		hand victim; // pra checar se ela caiu (KO por dano, ver pollDowned)
 		DWORD tick;
 	};
+	std::set<std::string> downNow; // vítimas que já sabemos que estão caídas (não conta o KO de novo)
 	std::map<std::string, LastHit> lastPlayerHit; // chave = handle da vítima
 	std::set<std::string> countedDeaths;
 	const DWORD KO_DEDUPE_MS = 10000; // knockout() repetido na mesma vítima em menos que isso não conta de novo
@@ -186,13 +188,15 @@ namespace
 	}
 
 	// Quem do jogador derrubou a vítima? NULL se não foi o jogador.
-	Character* findPlayerAttacker(Character* victim, bool verbose = true)
+	// trustLastGuy = false quando a vítima já estava caída e não sabemos quem a derrubou: aí o
+	// lastGuyWhoDefeatedMe pode ser só quem esquartejou/executou (#18).
+	Character* findPlayerAttacker(Character* victim, bool verbose = true, bool trustLastGuy = true)
 	{
 		Character* stealth = findStealthAttacker(victim, verbose);
 		if (stealth)
 			return stealth;
 
-		Character* c = victim->lastGuyWhoDefeatedMe.getCharacter();
+		Character* c = trustLastGuy ? victim->lastGuyWhoDefeatedMe.getCharacter() : NULL;
 		if (verbose)
 			dbg("  lastGuyWhoDefeatedMe = " + describe(c));
 		if (c && c->isPlayerCharacter())
@@ -298,9 +302,19 @@ namespace
 				return;
 			}
 			lastKO[victimKey] = now;
+			downNow.insert(victimKey); // o pollDowned não conta esse KO de novo
+		}
+		else
+		{
+			downNow.erase(victimKey);
 		}
 
-		Character* attacker = findPlayerAttacker(victim);
+		// Morreu caída sem sabermos quem derrubou: o lastGuyWhoDefeatedMe pode ser só quem
+		// esquartejou/executou, então não confia nele (#18)
+		bool trustLastGuy = !(kill && wasUnconscious);
+		if (!trustLastGuy)
+			dbg("  estava caída e não se sabe quem derrubou: ignora lastGuyWhoDefeatedMe");
+		Character* attacker = findPlayerAttacker(victim, true, trustLastGuy);
 		if (!kill)
 			rememberDowner(victim, attacker); // NULL: fica pendente; resolvePendingKOs define depois
 		if (!attacker)
@@ -371,6 +385,46 @@ namespace
 		}
 	}
 
+	// KO por dano (#18, #2): cair na luta não passa por knockout(), então a cada 250 ms confere se
+	// alguma vítima que o grupo acertou recentemente caiu inconsciente. Se caiu, é KO de quem deu o
+	// último golpe, e ele fica registrado como quem derrubou. Thread principal.
+	DWORD lastPoll = 0;
+
+	void pollDowned()
+	{
+		DWORD now = GetTickCount();
+		if (now - lastPoll < 250 || lastPlayerHit.empty())
+			return;
+		lastPoll = now;
+		boost::lock_guard<boost::mutex> g(lock);
+		for (std::map<std::string, LastHit>::iterator it = lastPlayerHit.begin(); it != lastPlayerHit.end(); ++it)
+		{
+			Character* victim = it->second.victim.getCharacter();
+			if (!victim)
+				continue;
+			bool down = victim->medical.unconcious && !victim->medical.dead;
+			if (!down)
+			{
+				downNow.erase(it->first);
+				continue;
+			}
+			if (!downNow.insert(it->first).second)
+				continue; // já sabíamos que caiu (KO contado aqui ou pelo knockout())
+			std::map<std::string, DWORD>::iterator ko = lastKO.find(it->first);
+			if (ko != lastKO.end() && now - ko->second < KO_DEDUPE_MS)
+				continue; // o knockout() acabou de contar esse
+			Character* attacker = it->second.attacker.getCharacter();
+			if (!attacker || !attacker->isPlayerCharacter())
+				continue;
+			lastKO[it->first] = now;
+			std::ostringstream o;
+			o << "KO por dano de " << describe(victim) << " (" << (now - it->second.tick) << " ms após o último golpe)";
+			dbg(o.str());
+			countTakedown(victim, attacker, false);
+			rememberDowner(victim, attacker);
+		}
+	}
+
 	void rememberHit(Character* victim, Character* attacker)
 	{
 		if (!victim || !attacker || !attacker->isPlayerCharacter() || victim->isPlayerCharacter())
@@ -383,8 +437,12 @@ namespace
 		boost::lock_guard<boost::mutex> g(lock);
 		LastHit h;
 		h.attacker = attacker->getHandle();
+		h.victim = victim->getHandle();
 		h.tick = GetTickCount();
-		lastPlayerHit[handleKey(victim)] = h;
+		std::string key = handleKey(victim);
+		lastPlayerHit[key] = h;
+		if (!victim->medical.unconcious)
+			downNow.erase(key); // está de pé apanhando: um KO futuro conta de novo
 	}
 
 	void resetAll()
@@ -396,6 +454,7 @@ namespace
 		lastKO.clear();
 		pendingKOs.clear();
 		downedBy.clear();
+		downNow.clear();
 	}
 
 	// ---------- hooks de combate ----------
@@ -783,6 +842,7 @@ namespace
 		}
 
 		resolvePendingKOs();
+		pollDowned();
 		checkKnownNames();
 
 		MyGUI::Gui* gui = MyGUI::Gui::getInstancePtr();

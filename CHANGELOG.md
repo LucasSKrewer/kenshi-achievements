@@ -2,6 +2,16 @@
 
 All notable changes to Kenshi Achievements. Versions follow [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Fixed
+- A kill now belongs to whoever **knocked the victim down** when it dies while still down
+  ([#18](https://github.com/LucasSKrewer/kenshi-achievements/issues/18), reported by @az455862):
+  - butchering a knocked-out animal (taking its hide/meat kills it) no longer gives the kill to the looter;
+  - if it was downed by a creature or NPC outside your squad, it doesn't count for you.
+
+  If the victim got back up and died later in a new fight, the normal rule applies.
+
 ## [1.1.0] — 2026-09-29
 
 ### Added

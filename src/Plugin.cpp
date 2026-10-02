@@ -78,6 +78,16 @@ namespace
 	const DWORD KO_DEDUPE_MS = 10000; // knockout() repetido na mesma vítima em menos que isso não conta de novo
 	std::map<std::string, DWORD> lastKO; // chave = handle da vítima
 
+	// Quem derrubou cada vítima (#18): se ela morre ainda caída (ex.: esquartejar um animal nocauteado
+	// mata na hora e o jogo credita quem esquartejou), a kill é de quem derrubou. Guarda os dados em vez
+	// de só o handle, pra contar mesmo que o personagem saia da área.
+	struct Downer
+	{
+		bool player;
+		std::string key, name, race, desc;
+	};
+	std::map<std::string, Downer> downedBy; // chave = handle da vítima
+
 	// ---------- utilitários ----------
 
 	std::string handleKey(RootObjectBase* o)
@@ -208,7 +218,33 @@ namespace
 		return NULL;
 	}
 
-	void onTakedown(Character* victim, bool kill)
+	// Chamar com o lock seguro.
+	void rememberDowner(Character* victim, Character* downer)
+	{
+		if (!downer)
+		{
+			downedBy.erase(handleKey(victim));
+			return;
+		}
+		Downer d;
+		d.player = downer->isPlayerCharacter();
+		d.key = charKey(downer);
+		d.name = downer->getName();
+		d.race = raceName(downer);
+		d.desc = describe(downer);
+		downedBy[handleKey(victim)] = d;
+	}
+
+	// Chamar com o lock seguro.
+	void countFor(Character* victim, const std::string& key, const std::string& name, const std::string& race, bool kill)
+	{
+		if (kill)
+			Stats::recordKill(key, name, race, Lang::toEnglish(raceName(victim)), Lang::toEnglish(factionName(victim)));
+		else
+			Stats::recordKO(key, name, race, Lang::toEnglish(raceName(victim)), Lang::toEnglish(factionName(victim)));
+	}
+
+	void onTakedown(Character* victim, bool kill, bool wasUnconscious = false)
 	{
 		if (!victim)
 			return;
@@ -227,6 +263,31 @@ namespace
 			dbg("  ignorado: morte dessa vítima já contada");
 			return;
 		}
+		if (kill)
+		{
+			// #18: morreu ainda caída -> a kill é de quem derrubou, não de quem deu o "golpe final"
+			// (esquartejar um animal nocauteado, executar um inimigo caído, sangrar até morrer).
+			std::map<std::string, Downer>::iterator dn = downedBy.find(victimKey);
+			if (dn != downedBy.end())
+			{
+				Downer d = dn->second;
+				downedBy.erase(dn);
+				if (wasUnconscious)
+				{
+					lastPlayerHit.erase(victimKey);
+					if (d.player)
+					{
+						dbg("  morreu caída: kill vai pra quem derrubou, " + d.desc + " id=" + d.key);
+						countFor(victim, d.key, d.name, d.race, true);
+					}
+					else
+					{
+						dbg("  morreu caída, derrubada por quem não é do jogador (" + d.desc + "): NÃO contado");
+					}
+					return;
+				}
+			}
+		}
 		if (!kill)
 		{
 			DWORD now = GetTickCount();
@@ -240,6 +301,8 @@ namespace
 		}
 
 		Character* attacker = findPlayerAttacker(victim);
+		if (!kill)
+			rememberDowner(victim, attacker); // NULL: fica pendente; resolvePendingKOs define depois
 		if (!attacker)
 		{
 			if (!kill)
@@ -265,11 +328,7 @@ namespace
 	{
 		std::string key = charKey(attacker);
 		dbg("  CONTADO para " + describe(attacker) + " id=" + key);
-		std::string name = attacker->getName();
-		if (kill)
-			Stats::recordKill(key, name, raceName(attacker), Lang::toEnglish(raceName(victim)), Lang::toEnglish(factionName(victim)));
-		else
-			Stats::recordKO(key, name, raceName(attacker), Lang::toEnglish(raceName(victim)), Lang::toEnglish(factionName(victim)));
+		countFor(victim, key, attacker->getName(), raceName(attacker), kill);
 	}
 
 	// Chamado a cada frame (thread principal): resolve KOs que ficaram sem atacante.
@@ -292,11 +351,16 @@ namespace
 					o << "KO de " << describe(victim) << " resolvido após " << (now - pendingKOs[i].tick) << " ms";
 					dbg(o.str());
 					countTakedown(victim, attacker, false);
+					rememberDowner(victim, attacker);
 				}
 				else if (victim)
 				{
+					// Derrubada por alguém de fora do grupo (ou desconhecido): guarda pra que esquartejar
+					// depois não dê a kill pro jogador (#18)
+					Character* other = victim->lastGuyWhoDefeatedMe.getCharacter();
+					rememberDowner(victim, other);
 					dbg("KO de " + describe(victim) + " NÃO contado: ninguém do jogador em 3 s (lastGuyWhoDefeatedMe = "
-						+ describe(victim->lastGuyWhoDefeatedMe.getCharacter()) + ")");
+						+ describe(other) + ")");
 				}
 				pendingKOs.erase(pendingKOs.begin() + i);
 			}
@@ -331,6 +395,7 @@ namespace
 		countedDeaths.clear();
 		lastKO.clear();
 		pendingKOs.clear();
+		downedBy.clear();
 	}
 
 	// ---------- hooks de combate ----------
@@ -338,9 +403,10 @@ namespace
 	void (*declareDead_orig)(Character*) = NULL;
 	void declareDead_hook(Character* self)
 	{
+		bool wasUnconscious = self->medical.unconcious; // antes: a morte pode limpar o estado
 		declareDead_orig(self);
-		dbg("declareDead() chamado");
-		onTakedown(self, true);
+		dbg(std::string("declareDead() chamado") + (wasUnconscious ? " (vítima estava caída)" : ""));
+		onTakedown(self, true, wasUnconscious);
 	}
 
 	void (*knockout_orig)(MedicalSystem*, float) = NULL;

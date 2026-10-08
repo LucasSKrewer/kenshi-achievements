@@ -2,6 +2,38 @@
 
 All notable changes to Kenshi Achievements. Versions follow [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+- **Limbs severed** ([#19](https://github.com/LucasSKrewer/kenshi-achievements/issues/19), suggested by
+  @az455862): counted per character and for the squad, shown in the F6 panel next to kills and KOs.
+  New metrics `limbs` and `char_limbs`.
+- **Stealth knockouts counted separately**
+  ([#13](https://github.com/LucasSKrewer/kenshi-achievements/issues/13)): metrics `stealth_kos` and
+  `char_stealth_kos`.
+- **Kill streaks** ([#12](https://github.com/LucasSKrewer/kenshi-achievements/issues/12)):
+  `burst_kills:<seconds>` and `burst_takedowns:<seconds>` track the most kills (or kills + KOs) within
+  that many seconds of game time. Pausing doesn't count.
+- **Bosses and unique NPCs** ([#11](https://github.com/LucasSKrewer/kenshi-achievements/issues/11)):
+  `npc_kills`, `npc_kos` and `npc_takedowns` (kill or knock out) by name, for unique characters only.
+- **23 new achievements** (68 in total):
+  - combat feats: Flurry, Massacre, Clean Sweep, Disarmed, Limb Collector, The Peeler, Lights Out,
+    Shadow, Nobody Saw a Thing;
+  - characters: Surgeon, Ninja;
+  - bosses: Dust King, Bugmaster, Holy Lord Phoenix, the High Inquisitors, Emperor Tengu, nobles,
+    Slave Masters, Esata, Tinfist, Valamon and a secret one;
+  - a 10-knockout tier (Sandman).
+- **F6 panel** ([#14](https://github.com/LucasSKrewer/kenshi-achievements/issues/14)):
+  - achievements grouped by **category** (`[Name]` lines in `achievements.txt`), with a completion
+    percentage;
+  - **most frequent victims** (top races and factions) in the Statistics tab;
+  - the mod **version** in the window title and in the log.
+- Achievements for bosses that don't exist in your game data are hidden, like race/faction ones.
+
+### Changed
+- Translated names with Kenshi's gender tags (e.g. "Senhor/AF/ de Escravos") are also mapped back to
+  English in their plain form.
+
 ## [1.1.1] — 2026-10-02
 
 ### Fixed

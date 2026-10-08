@@ -64,6 +64,8 @@ namespace
 
 	const DWORD HIT_MEMORY_MS = 30000;  // quanto tempo um golpe do jogador vale para autoria
 	const DWORD TOAST_MS = 6000;
+	const char* const VERSION = "1.2.0";
+	const DWORD LIMB_HIT_MS = 2000; // membro decepado só conta com golpe do grupo nesse intervalo (#19)
 	int panelKey = VK_F6; // @tecla no achievements.txt. F9 é o quickload do Kenshi, F5 o quicksave.
 
 	boost::mutex lock; // hooks de combate podem vir de outras threads
@@ -114,7 +116,7 @@ namespace
 	};
 	std::vector<PendingKO> pendingKOs;
 
-	void countTakedown(Character* victim, Character* attacker, bool kill);
+	void countTakedown(Character* victim, Character* attacker, bool kill, bool stealth = false);
 
 	std::string raceName(Character* c)
 	{
@@ -190,9 +192,12 @@ namespace
 	// Quem do jogador derrubou a vítima? NULL se não foi o jogador.
 	// trustLastGuy = false quando a vítima já estava caída e não sabemos quem a derrubou: aí o
 	// lastGuyWhoDefeatedMe pode ser só quem esquartejou/executou (#18).
+	bool lastFindWasStealth = false; // o último findPlayerAttacker achou pela tarefa furtiva (#13)
+
 	Character* findPlayerAttacker(Character* victim, bool verbose = true, bool trustLastGuy = true)
 	{
 		Character* stealth = findStealthAttacker(victim, verbose);
+		lastFindWasStealth = stealth != NULL;
 		if (stealth)
 			return stealth;
 
@@ -240,12 +245,29 @@ namespace
 	}
 
 	// Chamar com o lock seguro.
-	void countFor(Character* victim, const std::string& key, const std::string& name, const std::string& race, bool kill)
+	void countFor(Character* victim, const std::string& key, const std::string& name, const std::string& race,
+		bool kill, bool stealth = false)
 	{
+		Stats::Takedown t;
+		t.key = key;
+		t.name = name;
+		t.charRace = race;
+		t.race = Lang::toEnglish(raceName(victim));
+		t.faction = Lang::toEnglish(factionName(victim));
+		if (victim->isUnique())
+			t.npc = Lang::toEnglish(victim->getName()); // chefes e NPCs únicos (#11)
+		t.stealth = stealth;
+		t.time = ou ? ou->getTimeStamp() : -1.0; // relógio do jogo, pras sequências (#12)
+		if (debug)
+		{
+			std::ostringstream o;
+			o << "  registro: t=" << t.time << (t.npc.empty() ? "" : " npc='" + t.npc + "'") << (stealth ? " furtivo" : "");
+			dbg(o.str());
+		}
 		if (kill)
-			Stats::recordKill(key, name, race, Lang::toEnglish(raceName(victim)), Lang::toEnglish(factionName(victim)));
+			Stats::recordKill(t);
 		else
-			Stats::recordKO(key, name, race, Lang::toEnglish(raceName(victim)), Lang::toEnglish(factionName(victim)));
+			Stats::recordKO(t);
 	}
 
 	void onTakedown(Character* victim, bool kill, bool wasUnconscious = false)
@@ -332,17 +354,17 @@ namespace
 			dbg("  NÃO contado: atacante do jogador não identificado");
 			return;
 		}
-		countTakedown(victim, attacker, kill);
+		countTakedown(victim, attacker, kill, lastFindWasStealth);
 		if (kill)
 			lastPlayerHit.erase(victimKey);
 	}
 
 	// Chamar com o lock seguro.
-	void countTakedown(Character* victim, Character* attacker, bool kill)
+	void countTakedown(Character* victim, Character* attacker, bool kill, bool stealth)
 	{
 		std::string key = charKey(attacker);
 		dbg("  CONTADO para " + describe(attacker) + " id=" + key);
-		countFor(victim, key, attacker->getName(), raceName(attacker), kill);
+		countFor(victim, key, attacker->getName(), raceName(attacker), kill, stealth);
 	}
 
 	// Chamado a cada frame (thread principal): resolve KOs que ficaram sem atacante.
@@ -364,7 +386,7 @@ namespace
 					std::ostringstream o;
 					o << "KO de " << describe(victim) << " resolvido após " << (now - pendingKOs[i].tick) << " ms";
 					dbg(o.str());
-					countTakedown(victim, attacker, false);
+					countTakedown(victim, attacker, false, lastFindWasStealth);
 					rememberDowner(victim, attacker);
 				}
 				else if (victim)
@@ -501,6 +523,34 @@ namespace
 		if (attacker && self->me)
 			rememberHit(self->me, attacker->getHandle().getCharacter());
 		return addWound_orig(self, lowBlow, area, damage, material, attacker, attackDirection, harpoon);
+	}
+
+	// Membro decepado (#19): conta pra quem do grupo acertou a vítima instantes antes. A janela curta
+	// exclui o que não é combate do jogador: membros restaurados ao carregar o save, comidos por
+	// animais, arrancados por máquinas.
+	void (*amputate_orig)(MedicalSystem*, RobotLimbs::Limb, bool, const Ogre::Vector3&) = NULL;
+	void amputate_hook(MedicalSystem* self, RobotLimbs::Limb limb, bool createSeveredItem, const Ogre::Vector3& force)
+	{
+		Character* victim = self->me;
+		if (victim && !victim->isPlayerCharacter())
+		{
+			boost::lock_guard<boost::mutex> g(lock);
+			std::map<std::string, LastHit>::iterator it = lastPlayerHit.find(handleKey(victim));
+			if (it != lastPlayerHit.end() && GetTickCount() - it->second.tick <= LIMB_HIT_MS)
+			{
+				Character* attacker = it->second.attacker.getCharacter();
+				if (attacker && attacker->isPlayerCharacter())
+				{
+					dbg("MEMBRO decepado de " + describe(victim) + " por " + describe(attacker));
+					Stats::recordLimb(charKey(attacker), attacker->getName(), raceName(attacker));
+				}
+			}
+			else if (debug)
+			{
+				dbg("membro perdido por " + describe(victim) + " sem golpe recente do jogador: não contado");
+			}
+		}
+		amputate_orig(self, limb, createSeveredItem, force);
 	}
 
 	bool (*iShotYou_orig)(Character*, Character*, Harpoon*, bool) = NULL;
@@ -726,7 +776,7 @@ namespace
 		}
 		panel = gui->createWidgetReal<MyGUI::Window>("Kenshi_WindowCX", 0.30f, 0.15f, 0.40f, 0.65f,
 			MyGUI::Align::Default, "Overlapped", "KenshiAchievementsPanel");
-		panel->setCaption(Lang::tr("panel.title", "Kills & Achievements"));
+		panel->setCaption(Lang::tr("panel.title", "Kills & Achievements") + "  v" + VERSION);
 		MyGUI::Widget* client = panel->getClientWidget();
 
 		// Abas: dois botões no topo, o da aba atual fica "selecionado"
@@ -805,7 +855,7 @@ namespace
 		if (knownNamesChecked || !ou)
 			return;
 		knownNamesChecked = true;
-		std::set<std::string> races, factions;
+		std::set<std::string> races, factions, npcs;
 		for (auto it = ou->gamedata.gamedataSID.begin(); it != ou->gamedata.gamedataSID.end(); ++it)
 		{
 			GameData* d = it->second;
@@ -815,14 +865,16 @@ namespace
 				races.insert(Lang::toEnglish(d->name));
 			else if (d->type == FACTION)
 				factions.insert(Lang::toEnglish(d->name));
+			else if (d->type == CHARACTER)
+				npcs.insert(Lang::toEnglish(d->name)); // pra ocultar npc_* de chefes que não existem (#11)
 		}
 		std::vector<std::string> hidden;
 		{
 			boost::lock_guard<boost::mutex> g(lock);
-			hidden = Stats::setKnownNames(races, factions);
+			hidden = Stats::setKnownNames(races, factions, npcs);
 		}
 		std::ostringstream o;
-		o << "KenshiAchievements: " << races.size() << " races, " << factions.size() << " factions in game data; "
+		o << "KenshiAchievements: " << races.size() << " races, " << factions.size() << " factions, " << npcs.size() << " characters in game data; "
 			<< hidden.size() << " achievement(s) hidden (content not installed)";
 		for (size_t i = 0; i < hidden.size(); ++i)
 			o << (i ? ", " : ": ") << hidden[i];
@@ -949,7 +1001,7 @@ __declspec(dllexport) void startPlugin()
 		ErrorLog("KenshiAchievements: unknown @key '" + keyName + "', using F6");
 
 	std::ostringstream o;
-	o << "KenshiAchievements: " << n << " achievements loaded";
+	o << "KenshiAchievements v" << VERSION << ": " << n << " achievements loaded";
 	DebugLog(o.str());
 
 	HOOK(&Character::declareDead, &declareDead_hook, &declareDead_orig);
@@ -957,6 +1009,7 @@ __declspec(dllexport) void startPlugin()
 	HOOK(&Character::_NV_hitByMeleeAttack, &hitByMelee_hook, &hitByMelee_orig);
 	HOOK(&Character::iShotYou, &iShotYou_hook, &iShotYou_orig);
 	HOOK(&MedicalSystem::addWound, &addWound_hook, &addWound_orig);
+	HOOK(&MedicalSystem::amputate, &amputate_hook, &amputate_orig);
 	HOOK(&FactionManager::saveGameState, &saveGameState_hook, &saveGameState_orig);
 	HOOK(&GameWorld::loadAllPlatoons, &loadAllPlatoons_hook, &loadAllPlatoons_orig);
 	HOOK(&SaveManager::newGame, &newGame_hook, &newGame_orig);

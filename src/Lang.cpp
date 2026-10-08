@@ -1,5 +1,6 @@
 #include "Lang.h"
 
+#include <cctype>
 #include <cstring>
 #include <fstream>
 #include <map>
@@ -77,6 +78,28 @@ namespace Lang
 		bool startsWith(const std::string& s, const char* p)
 		{
 			return s.compare(0, strlen(p), p) == 0;
+		}
+
+		// Remove marcas "/AF/", "/OA3/"... (barra, letras maiúsculas/dígitos, barra).
+		std::string stripGenderTags(const std::string& s)
+		{
+			std::string out;
+			for (size_t i = 0; i < s.size();)
+			{
+				if (s[i] == '/')
+				{
+					size_t j = i + 1;
+					while (j < s.size() && (isupper((unsigned char)s[j]) || isdigit((unsigned char)s[j])))
+						++j;
+					if (j > i + 1 && j < s.size() && s[j] == '/')
+					{
+						i = j + 1; // pula a marca inteira
+						continue;
+					}
+				}
+				out += s[i++];
+			}
+			return out;
 		}
 	}
 
@@ -168,6 +191,11 @@ namespace Lang
 						e->second = id; // RACE/FACTION vence um nome de outro tipo
 						fromRaceOrFaction[str] = true;
 					}
+					// Marcas de gênero do Kenshi ("Senhor/AF/ de Escravos"): o jogo pode mostrar o nome
+					// já resolvido, então aprende também a forma sem a marca.
+					std::string plain = stripGenderTags(str);
+					if (plain != str && !plain.empty() && english.find(plain) == english.end())
+						english[plain] = id;
 				}
 				ctx.clear();
 				id.clear();

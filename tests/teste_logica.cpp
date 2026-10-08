@@ -52,7 +52,7 @@ int main(int argc, char** argv)
 	int ach = Stats::loadAchievements(mod + "achievements.txt", errors);
 	for (size_t i = 0; i < errors.size(); ++i)
 		printf("  erro: %s\n", errors[i].c_str());
-	check(ach == 45 && errors.empty(), "45 conquistas sem erro");
+	check(ach == 68 && errors.empty(), "68 conquistas sem erro");
 	check(Stats::setting("key", "?") == "F6", "@key = F6");
 
 	Stats::reset();
@@ -108,7 +108,7 @@ int main(int argc, char** argv)
 		std::string r = Stats::achievementsReport();
 		check(r.find("Caçador de Bicudos") == std::string::npos, "oculta não aparece no painel");
 		char esperado[64];
-		sprintf(esperado, "Concluídas: 0/%d", 45 - (int)hidden.size());
+		sprintf(esperado, "Concluídas: 0/%d", 68 - (int)hidden.size());
 		check(r.find(esperado) != std::string::npos, std::string("total ignora as ocultas (") + esperado + ")");
 
 		// Já liberada num save continua visível, mesmo com o conteúdo ausente
@@ -119,7 +119,7 @@ int main(int argc, char** argv)
 		Stats::importFrom(ints, strs);
 		r = Stats::achievementsReport();
 		check(r.find("[X] Caçador de Bicudos") != std::string::npos, "liberada continua visível");
-		sprintf(esperado, "Concluídas: 1/%d", 45 - (int)hidden.size() + 1);
+		sprintf(esperado, "Concluídas: 1/%d", 68 - (int)hidden.size() + 1);
 		check(r.find(esperado) != std::string::npos, std::string("resumo ignora id que não existe mais (") + esperado + ")");
 
 		// Nomes vazios (dados não lidos) = nada oculto
@@ -163,9 +163,126 @@ int main(int argc, char** argv)
 		Stats::reset();
 	}
 
-	printf("\n===== aba Estatísticas (The Arbiter selecionado) =====\n%s", stats.c_str());
-	printf("===== aba Conquistas =====\n%s", achs.c_str());
-	printf("===== nenhum selecionado =====\n%s", Stats::statsReport("", "").c_str());
+	// v1.2.0 — #19 membros decepados
+	{
+		Stats::reset();
+		Stats::recordLimb("h1", "Fuu", "Greenlander");
+		std::vector<Stats::Unlock> un = Stats::popUnlocks();
+		check(un.size() == 1 && un[0].title == "Desarmado", "1º membro libera Desarmado");
+		for (int i = 0; i < 24; ++i)
+			Stats::recordLimb("h1", "Fuu", "Greenlander");
+		un = Stats::popUnlocks();
+		check(un.size() == 2, "25 membros: Colecionador de Membros + Cirurgião");
+		std::string r = Stats::statsReport("h1", "Fuu");
+		check(r.find("Fuu\n   Kills: 0    KOs: 0    Membros: 25") != std::string::npos, "painel mostra Membros: 25");
+		std::map<std::string, int> ints;
+		std::map<std::string, std::string> strs;
+		Stats::exportTo(ints, strs);
+		Stats::importFrom(ints, strs);
+		check(Stats::statsReport("h1", "Fuu").find("Membros: 25") != std::string::npos, "membros sobrevivem ao save/load");
+		Stats::reset();
+	}
+
+	// #13 nocautes furtivos à parte
+	{
+		Stats::reset();
+		Stats::Takedown t;
+		t.key = "h1"; t.name = "Fuu"; t.race = "Shek"; t.faction = "Dust Bandits";
+		t.stealth = true;
+		Stats::recordKO(t);
+		t.stealth = false;
+		Stats::recordKO(t);
+		std::vector<Stats::Unlock> un = Stats::popUnlocks();
+		bool lights = false;
+		for (size_t i = 0; i < un.size(); ++i)
+			if (un[i].title == "Apagou a Luz")
+				lights = true;
+		check(lights, "1º nocaute furtivo libera Apagou a Luz");
+		std::string r = Stats::statsReport("h1", "Fuu");
+		check(r.find("KOs: 2") != std::string::npos && r.find("Nocautes furtivos: 1") != std::string::npos,
+			"2 KOs, 1 deles furtivo");
+		Stats::reset();
+	}
+
+	// #12 sequências pelo relógio do jogo
+	{
+		Stats::reset();
+		Stats::Takedown t;
+		t.key = "h1"; t.name = "Fuu"; t.race = "Shek"; t.faction = "Dust Bandits";
+		t.time = 100; Stats::recordKill(t);
+		t.time = 150; Stats::recordKill(t);   // 50 s depois: fora da janela de 30
+		t.time = 190; Stats::recordKill(t);
+		std::string r = Stats::achievementsReport();
+		check(r.find("Rajada  (1/3)") != std::string::npos, "kills espaçadas não formam rajada (1/3)");
+		t.time = 200; Stats::recordKill(t);
+		t.time = 215; Stats::recordKill(t);   // 190, 200, 215: 3 em 30 s
+		std::vector<Stats::Unlock> un = Stats::popUnlocks();
+		bool flurry = false;
+		for (size_t i = 0; i < un.size(); ++i)
+			if (un[i].title == "Rajada")
+				flurry = true;
+		check(flurry, "3 kills em 30 s liberam Rajada");
+		check(Stats::achievementsReport().find("Massacre  (3/5)") != std::string::npos, "3 em 60 s: Massacre 3/5");
+		t.time = -1; Stats::recordKill(t);    // sem relógio: conta a kill, não mexe na sequência
+		check(Stats::achievementsReport().find("Massacre  (3/5)") != std::string::npos, "kill sem relógio não entra na sequência");
+		std::map<std::string, int> ints;
+		std::map<std::string, std::string> strs;
+		Stats::exportTo(ints, strs);
+		Stats::importFrom(ints, strs);
+		check(Stats::achievementsReport().find("Massacre  (3/5)") != std::string::npos, "recorde sobrevive ao save/load");
+		Stats::reset();
+	}
+
+	// #11 chefes: só NPC único, kill ou KO, nome traduzido
+	{
+		Stats::reset();
+		check(Lang::toEnglish("Lorde Fênix Sagrado") == "Holy Lord Phoenix", "Lorde Fênix Sagrado -> Holy Lord Phoenix");
+		check(Lang::toEnglish("Senhor de Escravos Ruben") == "Slave Master Ruben", "nome com marca de gênero resolvida -> inglês");
+		Stats::Takedown t;
+		t.key = "h1"; t.name = "Fuu"; t.race = "Greenlander"; t.faction = "The Holy Nation";
+		t.npc = Lang::toEnglish("Lorde Fênix Sagrado");
+		Stats::recordKO(t);
+		std::vector<Stats::Unlock> un = Stats::popUnlocks();
+		bool phoenix = false;
+		for (size_t i = 0; i < un.size(); ++i)
+			if (un[i].title == "Fênix Abatido")
+				phoenix = true;
+		check(phoenix, "nocautear o Fênix libera Fênix Abatido (npc_takedowns)");
+		t.npc = "Lord Inaba"; Stats::recordKill(t);
+		t.npc = "Lady Kana"; Stats::recordKO(t);
+		check(Stats::achievementsReport().find("Luta de Classes  (2/5)") != std::string::npos, "nobres: Lord */Lady * = 2/5 (o Fênix não conta)");
+
+		// Chefe que não existe nos dados (mod removeu): oculta
+		std::set<std::string> races, factions, npcs;
+		npcs.insert("Holy Lord Phoenix");
+		npcs.insert("Lord Inaba");
+		std::vector<std::string> hidden = Stats::setKnownNames(races, factions, npcs);
+		std::set<std::string> h(hidden.begin(), hidden.end());
+		check(h.count("tinfist") && h.count("catlon") && !h.count("phoenix") && !h.count("nobles"), "chefes ausentes ficam ocultos");
+		Stats::setKnownNames(std::set<std::string>(), std::set<std::string>());
+		Stats::reset();
+	}
+
+	// #14 categorias no painel
+	{
+		Stats::reset();
+		std::string r = Stats::achievementsReport();
+		size_t geral = r.find("--- Geral ---"), chefes = r.find("--- Chefes ---"), genesis = r.find("--- Genesis ---");
+		check(geral != std::string::npos && chefes != std::string::npos && genesis != std::string::npos && geral < chefes && chefes < genesis,
+			"categorias traduzidas e na ordem do arquivo");
+		check(r.find("(0%)") != std::string::npos, "resumo com porcentagem");
+	}
+
+	Stats::reset();
+	Stats::recordKill("h1", "The Arbiter", "Skeleton Screamer MKII", "Swamp Raptor", "Swamp Creatures");
+	Stats::recordKill("h1", "The Arbiter", "Skeleton Screamer MKII", "Swamp Raptor", "Swamp Creatures");
+	Stats::recordKill("h2", "Brooke", "White Direwolf", "Shek", "Dust Bandits");
+	Stats::recordLimb("h2", "Brooke", "White Direwolf");
+	std::string painel = Stats::statsReport("h1", "The Arbiter");
+	check(painel.find("Raças: Swamp Raptor 2, Shek 1") != std::string::npos, "vítimas mais frequentes em ordem");
+
+	printf("\n===== aba Estatísticas =====\n%s", painel.c_str());
+	printf("===== aba Conquistas =====\n%s", Stats::achievementsReport().c_str());
 
 	printf("\n%s (%d falha(s))\n", falhas ? "FALHOU" : "TUDO OK", falhas);
 	return falhas ? 1 : 0;

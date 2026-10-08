@@ -3,16 +3,24 @@
 # Format:  id | metric | target | title | description
 #
 # Metrics:
-#   kills, kos, takedowns (kills + KOs)            -> whole squad
-#   char_kills, char_kos                           -> best single character
-#   race_kills:<Race>, race_kos:<Race>             -> e.g. race_kills:Shek, race_kills:*Beak Thing
-#   faction_kills:<Faction>, faction_kos:<Faction> -> e.g. faction_kills:*Holy Nation*
+#   kills, kos, takedowns (kills + KOs)                -> whole squad
+#   limbs                                              -> limbs severed by the squad
+#   stealth_kos                                        -> stealth knockouts
+#   char_kills, char_kos, char_limbs, char_stealth_kos -> best single character
+#   race_kills:<Race>, race_kos:<Race>                 -> e.g. race_kills:Shek, race_kills:*Beak Thing
+#   faction_kills:<Faction>, faction_kos:<Faction>     -> e.g. faction_kills:The Holy Nation
+#   npc_kills:<Name>, npc_kos:<Name>, npc_takedowns:<Name> (kill or KO)
+#                                                      -> unique NPCs only, e.g. npc_takedowns:Tinfist
+#   burst_kills:<seconds>, burst_takedowns:<seconds>   -> most kills (or kills + KOs) within that many
+#                                                         seconds of game time, e.g. burst_kills:30 | 3
 #
-# Race/faction use the game's ENGLISH names, in any game language: translated names are mapped
+# Race/faction/NPC use the game's ENGLISH names, in any game language: translated names are mapped
 # back to English using the game's own dictionary (locale/<lang>/gamedata.po). Case doesn't matter.
 #   *   matches anything — useful with mods like Genesis that add variants ("*Skeleton*" = Skeleton MKI, MKII...)
 #   ,   separates alternatives — "Dust Bandits,Hungry Bandits"
+# Achievements whose race/faction/NPC doesn't exist in your game (mod not installed) are hidden.
 #
+# [Name] starts a category (a group in the F6 panel). Translate it with cat.<Name> in lang/<language>.txt.
 # A leading ? on the id makes it a secret achievement: shown as ??? until unlocked ("?regicide | ...").
 # Title/description here are the English default. Translations go in lang/<language>.txt
 # (<id>.title / <id>.desc). Never change an `id` after release: saves track unlocks by id.
@@ -34,32 +42,54 @@
 # Diagnostics: 1 logs every kill/KO/hit to RE_Kenshi_log.txt (keep 0 for normal play).
 @debug = 0
 
+[General]
 first_blood   | kills      | 1    | First Blood          | Kill your first enemy.
 killer_10     | kills      | 10   | Dirty Hands          | 10 kills.
 killer_100    | kills      | 100  | Butcher              | 100 kills.
 killer_500    | kills      | 500  | Reaper               | 500 kills.
 killer_1000   | kills      | 1000 | Legend of Kenshi     | 1000 kills.
 killer_2500   | kills      | 2500 | Myth                 | 2500 kills.
-
 first_ko      | kos        | 1    | Good Night           | Knock out your first enemy.
+ko_10         | kos        | 10   | Sandman              | 10 knockouts.
 ko_50         | kos        | 50   | Knockout Artist      | 50 knockouts.
 ko_250        | kos        | 250  | Iron Fists           | 250 knockouts.
-
 takedown_1000 | takedowns  | 1000 | Nobody Stays Standing | 1000 kills + knockouts combined.
 
-solo_50       | char_kills | 50   | One-Man Army         | A single character with 50 kills.
-solo_ko_100   | char_kos   | 100  | Specialist           | A single character with 100 knockouts.
-solo_200      | char_kills | 200  | Walking Legend       | A single character with 200 kills.
+[Combat feats]
+flurry        | burst_kills:30     | 3  | Flurry        | 3 kills within 30 seconds.
+massacre      | burst_kills:60     | 5  | Massacre      | 5 kills within a minute.
+clean_sweep   | burst_takedowns:60 | 10 | Clean Sweep   | 10 kills or knockouts within a minute.
+limb_1        | limbs       | 1   | Disarmed        | Sever your first limb.
+limb_25       | limbs       | 25  | Limb Collector  | Sever 25 limbs.
+limb_100      | limbs       | 100 | The Peeler      | Sever 100 limbs.
+stealth_1     | stealth_kos | 1   | Lights Out      | Knock someone out from the shadows.
+stealth_10    | stealth_kos | 10  | Shadow          | 10 stealth knockouts.
+stealth_50    | stealth_kos | 50  | Nobody Saw a Thing | 50 stealth knockouts.
 
+[Characters]
+solo_50       | char_kills | 50   | One-Man Army         | A single character with 50 kills.
+solo_200      | char_kills | 200  | Walking Legend       | A single character with 200 kills.
+solo_ko_100   | char_kos   | 100  | Specialist           | A single character with 100 knockouts.
+solo_limb_25  | char_limbs | 25   | Surgeon              | A single character severs 25 limbs.
+solo_stealth_25 | char_stealth_kos | 25 | Ninja          | A single character with 25 stealth knockouts.
+
+[Creatures]
 beak_hunter   | race_kills:*Beak Thing      | 5  | Beak Hunter        | Kill 5 Beak Things.
+beak_master     | race_kills:*Beak Thing          | 50 | Beak Master        | Kill 50 Beak Things.
 shek_slayer   | race_kills:Shek             | 25 | Horn Breaker       | Kill 25 Shek.
 skeleton_bane | race_kills:*Skeleton*       | 10 | Scrapper           | Destroy 10 skeletons.
 skeleton_scrapyard | race_kills:*Skeleton* | 100 | Scrap Yard   | Destroy 100 skeletons.
+ape_escape      | race_kills:*Gorillo             | 5  | Ape Escape         | Kill 5 Gorillos.
+bonedog_pack    | race_kills:*Bonedog*            | 25 | Pack Breaker       | Kill 25 Bonedogs.
+arachnophobia   | race_kills:*Spider*             | 25 | Arachnophobia      | Kill 25 spiders.
+spider_exterminator | race_kills:*Spider* | 100 | Exterminator | Kill 100 spiders.
+fish_fry        | race_kills:*Fishman*            | 25 | Fish Fry           | Kill 25 Fishmen.
+?leviathan      | race_kills:Leviathan            | 1  | Leviathan Slayer   | Kill a Leviathan.
+?regicide       | race_kills:Hive Queen,Southern Hive Queen | 1 | Regicide | Kill a Hive Queen.
 
+[Factions]
 heretic       | faction_kills:The Holy Nation | 50 | Heretic            | Kill 50 members of the Holy Nation.
 bandit_bane   | faction_kills:Dust Bandits  | 25 | Dust Settled       | Kill 25 Dust Bandits.
-
-# --- Base game: notable factions and creatures (#5) ---
 cannibal_hunter | faction_kills:Cannibals         | 50 | Cannibal Hunter    | Kill 50 Cannibals.
 fog_lifter      | faction_kills:Fogmen            | 25 | Fog Lifter         | Kill 25 Fogmen.
 skinned         | faction_kills:Skin Bandits      | 10 | Skin for Skin      | Kill 10 Skin Bandits.
@@ -67,16 +97,23 @@ samurai_slayer  | faction_kills:United Cities     | 50 | Samurai Slayer     | Ki
 crab_cracker    | faction_kills:Crab Raiders      | 20 | Crab Cracker       | Kill 20 Crab Raiders.
 reaver_bane     | faction_kills:Reavers           | 20 | Reaper of Reavers  | Kill 20 Reavers.
 hungry_no_more  | faction_kills:Starving Bandits  | 50 | Hungry No More     | Kill 50 Starving Bandits.
-ape_escape      | race_kills:*Gorillo             | 5  | Ape Escape         | Kill 5 Gorillos.
-?leviathan      | race_kills:Leviathan            | 1  | Leviathan Slayer   | Kill a Leviathan.
-?regicide       | race_kills:Hive Queen,Southern Hive Queen | 1 | Regicide | Kill a Hive Queen.
-bonedog_pack    | race_kills:*Bonedog*            | 25 | Pack Breaker       | Kill 25 Bonedogs.
-arachnophobia   | race_kills:*Spider*             | 25 | Arachnophobia      | Kill 25 spiders.
-spider_exterminator | race_kills:*Spider* | 100 | Exterminator | Kill 100 spiders.
-fish_fry        | race_kills:*Fishman*            | 25 | Fish Fry           | Kill 25 Fishmen.
-beak_master     | race_kills:*Beak Thing          | 50 | Beak Master        | Kill 50 Beak Things.
 
-# --- Genesis (#6) — hidden automatically when Genesis isn't installed ---
+# Unique NPCs: kill or knock out (you usually want them alive for the bounty).
+[Bosses]
+dust_king     | npc_takedowns:Dust King             | 1 | Dethroned        | Defeat the Dust King.
+bugmaster     | npc_takedowns:Bugmaster             | 1 | Pest Control     | Defeat the Bugmaster.
+phoenix       | npc_takedowns:Holy Lord Phoenix     | 1 | Phoenix Down     | Defeat the Holy Lord Phoenix.
+inquisition   | npc_takedowns:High Inquisitor*      | 2 | Nobody Expected It | Defeat both High Inquisitors.
+tengu         | npc_takedowns:Emperor Tengu         | 1 | Regime Change    | Defeat Emperor Tengu.
+nobles        | npc_takedowns:Lord *,Lady *         | 5 | Class Warfare    | Defeat 5 nobles.
+slavers       | npc_takedowns:Slave Master*         | 2 | Chains Broken    | Defeat both Slave Masters.
+esata         | npc_takedowns:Esata the Stone Golem | 1 | Stone Breaker    | Defeat Esata the Stone Golem.
+tinfist       | npc_takedowns:Tinfist               | 1 | Rust in Peace    | Defeat Tinfist.
+valamon       | npc_takedowns:Valamon               | 1 | Reaver No More   | Defeat Valamon.
+?catlon       | npc_takedowns:Mad Cat-Lon           | 1 | Mad World        | Defeat Mad Cat-Lon.
+
+# Hidden automatically when Genesis isn't installed.
+[Genesis]
 primordial       | race_kills:Primordial Hive*      | 10 | Primordial Purge | Kill 10 Primordial Hive.
 primordial_queen | race_kills:Primordial Hive Queen | 1  | Mother of None   | Kill a Primordial Hive Queen.
 mk4_scrapper     | race_kills:*MKIV                 | 10 | Latest Model     | Destroy 10 MKIV skeletons.

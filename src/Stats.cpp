@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <cctype>
 #include <cstdlib>
+#include <deque>
 #include <fstream>
 #include <sstream>
 
@@ -13,8 +14,17 @@ namespace Stats
 	{
 		std::map<std::string, CharStats> chars; // chave = handle
 		std::map<std::string, int> killsByRace, kosByRace, killsByFaction, kosByFaction;
+		std::map<std::string, int> killsByNpc, kosByNpc; // só NPCs únicos
 		int totalKills = 0;
 		int totalKOs = 0;
+		int totalStealthKOs = 0;
+		int totalLimbs = 0;
+
+		// Sequências: instantes (relógio do jogo, em segundos) das últimas kills/derrubadas do grupo,
+		// e o recorde por tamanho de janela (em segundos).
+		std::deque<double> killTimes, takedownTimes;
+		std::map<int, int> bestBurstKills, bestBurstTakedowns;
+		const double BURST_KEEP_SECONDS = 600.0;
 
 		std::vector<Achievement> achievements;
 		std::map<std::string, std::string> settings;
@@ -23,12 +33,18 @@ namespace Stats
 
 		const char* const P_CHAR_KILLS = "c.k:";
 		const char* const P_CHAR_KOS = "c.o:";
+		const char* const P_CHAR_STEALTH = "c.s:";
+		const char* const P_CHAR_LIMBS = "c.l:";
 		const char* const P_CHAR_NAME = "c.n:";
 		const char* const P_CHAR_RACE = "c.r:";
 		const char* const P_RACE_KILLS = "r.k:";
 		const char* const P_RACE_KOS = "r.o:";
 		const char* const P_FACTION_KILLS = "f.k:";
 		const char* const P_FACTION_KOS = "f.o:";
+		const char* const P_NPC_KILLS = "n.k:";
+		const char* const P_NPC_KOS = "n.o:";
+		const char* const P_BURST_KILLS = "b.k:";
+		const char* const P_BURST_TAKEDOWNS = "b.t:";
 		const char* const P_UNLOCKED = "a:";
 
 		std::string trim(const std::string& s)
@@ -56,6 +72,12 @@ namespace Stats
 			return true;
 		}
 
+		bool hasPrefix(const std::string& s, const char* prefix)
+		{
+			std::string p(prefix);
+			return s.compare(0, p.size(), p) == 0;
+		}
+
 		// Comparação sem diferenciar maiúsculas, com '*' casando qualquer trecho.
 		// Mods como o Genesis criam variantes (Skeleton MKI, MKII...), então "Skeleton*" pega todas.
 		bool globMatch(const char* pat, const char* s)
@@ -67,8 +89,7 @@ namespace Stats
 			return *s != '\0' && tolower((unsigned char)*pat) == tolower((unsigned char)*s) && globMatch(pat + 1, s + 1);
 		}
 
-		// Soma as entradas cujo nome casa com o padrão. Vírgula separa alternativas:
-		// "Dust Bandits,Bandidos da Poeira" ou "*Skeleton*,Soldierbot".
+		// Vírgula separa alternativas: "Dust Bandits,Hungry Bandits" ou "*Skeleton*,Soldierbot".
 		std::vector<std::string> splitAlternatives(const std::string& pattern)
 		{
 			std::vector<std::string> alts;
@@ -93,6 +114,7 @@ namespace Stats
 			return false;
 		}
 
+		// Soma as entradas cujo nome casa com o padrão.
 		int lookup(const std::map<std::string, int>& m, const std::string& pattern)
 		{
 			std::vector<std::string> alts = splitAlternatives(pattern);
@@ -121,24 +143,46 @@ namespace Stats
 			return Lang::tr(a.id + ".desc", a.description);
 		}
 
+		int charField(const CharStats& c, const std::string& metric)
+		{
+			if (metric == "char_kills") return c.kills;
+			if (metric == "char_kos") return c.kos;
+			if (metric == "char_stealth_kos") return c.stealthKos;
+			if (metric == "char_limbs") return c.limbs;
+			return 0;
+		}
+
+		int bestOf(const std::map<int, int>& m, const std::string& arg)
+		{
+			std::map<int, int>::const_iterator it = m.find(atoi(arg.c_str()));
+			return it == m.end() ? 0 : it->second;
+		}
+
 		// Valor atual da métrica. Para char_*, `who` recebe o nome do melhor personagem.
 		int metricValue(const Achievement& a, std::string& who)
 		{
 			who.clear();
-			if (a.metric == "kills") return totalKills;
-			if (a.metric == "kos") return totalKOs;
-			if (a.metric == "takedowns") return totalKills + totalKOs;
-			if (a.metric == "race_kills") return lookup(killsByRace, a.arg);
-			if (a.metric == "race_kos") return lookup(kosByRace, a.arg);
-			if (a.metric == "faction_kills") return lookup(killsByFaction, a.arg);
-			if (a.metric == "faction_kos") return lookup(kosByFaction, a.arg);
-			if (a.metric == "char_kills" || a.metric == "char_kos")
+			const std::string& m = a.metric;
+			if (m == "kills") return totalKills;
+			if (m == "kos") return totalKOs;
+			if (m == "takedowns") return totalKills + totalKOs;
+			if (m == "limbs") return totalLimbs;
+			if (m == "stealth_kos") return totalStealthKOs;
+			if (m == "race_kills") return lookup(killsByRace, a.arg);
+			if (m == "race_kos") return lookup(kosByRace, a.arg);
+			if (m == "faction_kills") return lookup(killsByFaction, a.arg);
+			if (m == "faction_kos") return lookup(kosByFaction, a.arg);
+			if (m == "npc_kills") return lookup(killsByNpc, a.arg);
+			if (m == "npc_kos") return lookup(kosByNpc, a.arg);
+			if (m == "npc_takedowns") return lookup(killsByNpc, a.arg) + lookup(kosByNpc, a.arg); // derrotar = matar ou nocautear
+			if (m == "burst_kills") return bestOf(bestBurstKills, a.arg);
+			if (m == "burst_takedowns") return bestOf(bestBurstTakedowns, a.arg);
+			if (hasPrefix(m, "char_"))
 			{
-				bool k = a.metric == "char_kills";
 				int best = 0;
 				for (std::map<std::string, CharStats>::const_iterator it = chars.begin(); it != chars.end(); ++it)
 				{
-					int v = k ? it->second.kills : it->second.kos;
+					int v = charField(it->second, m);
 					if (v > best)
 					{
 						best = v;
@@ -175,37 +219,74 @@ namespace Stats
 
 		bool isKnownMetric(const std::string& m)
 		{
-			return m == "kills" || m == "kos" || m == "takedowns"
-				|| m == "char_kills" || m == "char_kos"
+			return m == "kills" || m == "kos" || m == "takedowns" || m == "limbs" || m == "stealth_kos"
+				|| m == "char_kills" || m == "char_kos" || m == "char_limbs" || m == "char_stealth_kos"
 				|| m == "race_kills" || m == "race_kos"
-				|| m == "faction_kills" || m == "faction_kos";
+				|| m == "faction_kills" || m == "faction_kos"
+				|| m == "npc_kills" || m == "npc_kos" || m == "npc_takedowns"
+				|| m == "burst_kills" || m == "burst_takedowns";
 		}
 
 		bool needsArg(const std::string& m)
 		{
-			return m.compare(0, 5, "race_") == 0 || m.compare(0, 8, "faction_") == 0;
+			return hasPrefix(m, "race_") || hasPrefix(m, "faction_") || hasPrefix(m, "npc_") || hasPrefix(m, "burst_");
 		}
 
-		void record(bool kill, const std::string& key, const std::string& name, const std::string& charRace,
-			const std::string& race, const std::string& faction)
+		// Atualiza o recorde de "N em X segundos" pra cada janela citada por alguma conquista.
+		void updateBursts(std::deque<double>& times, std::map<int, int>& best, const char* metric, double now)
 		{
-			CharStats& c = chars[key];
-			c.name = name;
-			if (!charRace.empty())
-				c.race = charRace;
+			if (!times.empty() && now < times.back())
+				times.clear(); // o relógio voltou (outro save): descarta a sequência
+			times.push_back(now);
+			while (!times.empty() && times.front() < now - BURST_KEEP_SECONDS)
+				times.pop_front();
+			for (size_t i = 0; i < achievements.size(); ++i)
+			{
+				if (achievements[i].metric != metric)
+					continue;
+				int window = atoi(achievements[i].arg.c_str());
+				if (window <= 0)
+					continue;
+				int n = 0;
+				for (std::deque<double>::const_reverse_iterator t = times.rbegin(); t != times.rend() && *t >= now - window; ++t)
+					++n;
+				if (n > best[window])
+					best[window] = n;
+			}
+		}
+
+		void record(bool kill, const Takedown& t)
+		{
+			CharStats& c = chars[t.key];
+			c.name = t.name;
+			if (!t.charRace.empty())
+				c.race = t.charRace;
 			if (kill)
 			{
 				++c.kills;
 				++totalKills;
-				if (!race.empty()) ++killsByRace[race];
-				if (!faction.empty()) ++killsByFaction[faction];
+				if (!t.race.empty()) ++killsByRace[t.race];
+				if (!t.faction.empty()) ++killsByFaction[t.faction];
+				if (!t.npc.empty()) ++killsByNpc[t.npc];
 			}
 			else
 			{
 				++c.kos;
 				++totalKOs;
-				if (!race.empty()) ++kosByRace[race];
-				if (!faction.empty()) ++kosByFaction[faction];
+				if (t.stealth)
+				{
+					++c.stealthKos;
+					++totalStealthKOs;
+				}
+				if (!t.race.empty()) ++kosByRace[t.race];
+				if (!t.faction.empty()) ++kosByFaction[t.faction];
+				if (!t.npc.empty()) ++kosByNpc[t.npc];
+			}
+			if (t.time >= 0)
+			{
+				if (kill)
+					updateBursts(killTimes, bestBurstKills, "burst_kills", t.time);
+				updateBursts(takedownTimes, bestBurstTakedowns, "burst_takedowns", t.time);
 			}
 			checkAchievements(true);
 		}
@@ -213,16 +294,24 @@ namespace Stats
 		bool byKillsDesc(const CharStats& a, const CharStats& b)
 		{
 			if (a.kills != b.kills) return a.kills > b.kills;
-			return a.kos > b.kos;
+			if (a.kos != b.kos) return a.kos > b.kos;
+			return a.limbs > b.limbs;
 		}
 
 		bool byKillsDescPair(const std::pair<CharStats, std::string>& a, const std::pair<CharStats, std::string>& b)
 		{
 			return byKillsDesc(a.first, b.first);
 		}
+
+		bool byCountDesc(const std::pair<int, std::string>& a, const std::pair<int, std::string>& b)
+		{
+			if (a.first != b.first) return a.first > b.first;
+			return a.second < b.second;
+		}
 	}
 
-	// Formato: id | métrica[:argumento] | alvo | título | descrição   (# = comentário)
+	// Formato: id | métrica[:argumento] | alvo | título | descrição
+	//   # comentário      @chave = valor      [Categoria]      ?id = secreta
 	int loadAchievements(const std::string& path, std::vector<std::string>& errors)
 	{
 		achievements.clear();
@@ -235,7 +324,7 @@ namespace Stats
 		}
 
 		std::set<std::string> ids;
-		std::string line;
+		std::string line, category;
 		int lineNo = 0;
 		while (std::getline(in, line))
 		{
@@ -257,6 +346,12 @@ namespace Stats
 				continue;
 			}
 
+			if (line[0] == '[' && line[line.size() - 1] == ']')
+			{
+				category = trim(line.substr(1, line.size() - 2));
+				continue;
+			}
+
 			std::vector<std::string> f;
 			std::stringstream ss(line);
 			std::string part;
@@ -271,6 +366,7 @@ namespace Stats
 			}
 
 			Achievement a;
+			a.category = category;
 			a.id = f[0];
 			if (!a.id.empty() && a.id[0] == '?')
 			{
@@ -292,7 +388,9 @@ namespace Stats
 			if (!isKnownMetric(a.metric))
 				errors.push_back(where + "unknown metric '" + a.metric + "'");
 			else if (needsArg(a.metric) && a.arg.empty())
-				errors.push_back(where + a.metric + " needs an argument (e.g. " + a.metric + ":Shek)");
+				errors.push_back(where + a.metric + " needs an argument (e.g. race_kills:Shek, burst_kills:30)");
+			else if (hasPrefix(a.metric, "burst_") && atoi(a.arg.c_str()) <= 0)
+				errors.push_back(where + a.metric + " needs a time window in seconds (e.g. " + a.metric + ":30)");
 			else if (a.target <= 0)
 				errors.push_back(where + "target must be > 0");
 			else if (!ids.insert(a.id).second)
@@ -316,22 +414,66 @@ namespace Stats
 		kosByRace.clear();
 		killsByFaction.clear();
 		kosByFaction.clear();
+		killsByNpc.clear();
+		kosByNpc.clear();
 		totalKills = 0;
 		totalKOs = 0;
+		totalStealthKOs = 0;
+		totalLimbs = 0;
+		killTimes.clear();
+		takedownTimes.clear();
+		bestBurstKills.clear();
+		bestBurstTakedowns.clear();
 		unlocked.clear();
 		pending.clear();
+	}
+
+	void recordKill(const Takedown& t)
+	{
+		record(true, t);
+	}
+
+	void recordKO(const Takedown& t)
+	{
+		record(false, t);
+	}
+
+	void recordLimb(const std::string& key, const std::string& name, const std::string& charRace)
+	{
+		CharStats& c = chars[key];
+		c.name = name;
+		if (!charRace.empty())
+			c.race = charRace;
+		++c.limbs;
+		++totalLimbs;
+		checkAchievements(true);
+	}
+
+	namespace
+	{
+		Takedown simple(const std::string& key, const std::string& name, const std::string& charRace,
+			const std::string& race, const std::string& faction)
+		{
+			Takedown t;
+			t.key = key;
+			t.name = name;
+			t.charRace = charRace;
+			t.race = race;
+			t.faction = faction;
+			return t;
+		}
 	}
 
 	void recordKill(const std::string& key, const std::string& name, const std::string& charRace,
 		const std::string& race, const std::string& faction)
 	{
-		record(true, key, name, charRace, race, faction);
+		record(true, simple(key, name, charRace, race, faction));
 	}
 
 	void recordKO(const std::string& key, const std::string& name, const std::string& charRace,
 		const std::string& race, const std::string& faction)
 	{
-		record(false, key, name, charRace, race, faction);
+		record(false, simple(key, name, charRace, race, faction));
 	}
 
 	std::vector<Unlock> popUnlocks()
@@ -345,10 +487,14 @@ namespace Stats
 	{
 		ints["total.k"] = totalKills;
 		ints["total.o"] = totalKOs;
+		if (totalStealthKOs) ints["total.s"] = totalStealthKOs;
+		if (totalLimbs) ints["total.l"] = totalLimbs;
 		for (std::map<std::string, CharStats>::const_iterator it = chars.begin(); it != chars.end(); ++it)
 		{
 			ints[P_CHAR_KILLS + it->first] = it->second.kills;
 			ints[P_CHAR_KOS + it->first] = it->second.kos;
+			if (it->second.stealthKos) ints[P_CHAR_STEALTH + it->first] = it->second.stealthKos;
+			if (it->second.limbs) ints[P_CHAR_LIMBS + it->first] = it->second.limbs;
 			strs[P_CHAR_NAME + it->first] = it->second.name;
 			if (!it->second.race.empty())
 				strs[P_CHAR_RACE + it->first] = it->second.race;
@@ -358,6 +504,11 @@ namespace Stats
 		for (i = kosByRace.begin(); i != kosByRace.end(); ++i) ints[P_RACE_KOS + i->first] = i->second;
 		for (i = killsByFaction.begin(); i != killsByFaction.end(); ++i) ints[P_FACTION_KILLS + i->first] = i->second;
 		for (i = kosByFaction.begin(); i != kosByFaction.end(); ++i) ints[P_FACTION_KOS + i->first] = i->second;
+		for (i = killsByNpc.begin(); i != killsByNpc.end(); ++i) ints[P_NPC_KILLS + i->first] = i->second;
+		for (i = kosByNpc.begin(); i != kosByNpc.end(); ++i) ints[P_NPC_KOS + i->first] = i->second;
+		std::map<int, int>::const_iterator b;
+		for (b = bestBurstKills.begin(); b != bestBurstKills.end(); ++b) ints[P_BURST_KILLS + itos(b->first)] = b->second;
+		for (b = bestBurstTakedowns.begin(); b != bestBurstTakedowns.end(); ++b) ints[P_BURST_TAKEDOWNS + itos(b->first)] = b->second;
 		for (std::set<std::string>::const_iterator a = unlocked.begin(); a != unlocked.end(); ++a)
 			ints[P_UNLOCKED + *a] = 1;
 	}
@@ -372,13 +523,21 @@ namespace Stats
 			std::string rest;
 			if (k == "total.k") totalKills = v;
 			else if (k == "total.o") totalKOs = v;
+			else if (k == "total.s") totalStealthKOs = v;
+			else if (k == "total.l") totalLimbs = v;
 			else if (startsWith(k, P_CHAR_KILLS, rest)) chars[rest].kills = v;
 			else if (startsWith(k, P_CHAR_KOS, rest)) chars[rest].kos = v;
+			else if (startsWith(k, P_CHAR_STEALTH, rest)) chars[rest].stealthKos = v;
+			else if (startsWith(k, P_CHAR_LIMBS, rest)) chars[rest].limbs = v;
 			// Saves antigos podem ter nomes traduzidos ("Bandidos da Poeira"): leva pro inglês e soma
 			else if (startsWith(k, P_RACE_KILLS, rest)) killsByRace[Lang::toEnglish(rest)] += v;
 			else if (startsWith(k, P_RACE_KOS, rest)) kosByRace[Lang::toEnglish(rest)] += v;
 			else if (startsWith(k, P_FACTION_KILLS, rest)) killsByFaction[Lang::toEnglish(rest)] += v;
 			else if (startsWith(k, P_FACTION_KOS, rest)) kosByFaction[Lang::toEnglish(rest)] += v;
+			else if (startsWith(k, P_NPC_KILLS, rest)) killsByNpc[rest] += v;
+			else if (startsWith(k, P_NPC_KOS, rest)) kosByNpc[rest] += v;
+			else if (startsWith(k, P_BURST_KILLS, rest)) bestBurstKills[atoi(rest.c_str())] = v;
+			else if (startsWith(k, P_BURST_TAKEDOWNS, rest)) bestBurstTakedowns[atoi(rest.c_str())] = v;
 			else if (startsWith(k, P_UNLOCKED, rest)) unlocked.insert(rest);
 		}
 		for (std::map<std::string, std::string>::const_iterator it = strs.begin(); it != strs.end(); ++it)
@@ -395,9 +554,13 @@ namespace Stats
 
 	namespace
 	{
-		std::string statLine(int kills, int kos)
+		std::string statLine(const CharStats& c)
 		{
-			return Lang::fill(Lang::fill(Lang::tr("stats.line", "Kills: {kills}    KOs: {kos}"), "kills", kills), "kos", kos);
+			std::string s = Lang::tr("stats.line", "Kills: {kills}    KOs: {kos}    Limbs: {limbs}");
+			s = Lang::fill(s, "kills", c.kills);
+			s = Lang::fill(s, "kos", c.kos);
+			s = Lang::fill(s, "limbs", c.limbs);
+			return s;
 		}
 
 		// Nome pra exibir; se outro personagem tem o mesmo nome, acrescenta a raça pra diferenciar.
@@ -411,6 +574,19 @@ namespace Stats
 					return name + " (" + race + ")";
 			}
 			return name;
+		}
+
+		// "A 40, B 35, C 21" com os `n` maiores.
+		std::string topOf(const std::map<std::string, int>& m, size_t n)
+		{
+			std::vector<std::pair<int, std::string> > v;
+			for (std::map<std::string, int>::const_iterator it = m.begin(); it != m.end(); ++it)
+				v.push_back(std::make_pair(it->second, it->first));
+			std::sort(v.begin(), v.end(), byCountDesc);
+			std::ostringstream o;
+			for (size_t i = 0; i < v.size() && i < n; ++i)
+				o << (i ? ", " : "") << v[i].second << " " << v[i].first;
+			return o.str();
 		}
 	}
 
@@ -428,11 +604,19 @@ namespace Stats
 			if (it != chars.end())
 				sel = it->second;
 			o << displayName(selectedKey, selectedName, sel.race) << "\n";
-			o << "   " << statLine(sel.kills, sel.kos) << "\n";
+			o << "   " << statLine(sel) << "\n";
+			if (sel.stealthKos)
+				o << "   " << Lang::fill(Lang::tr("stats.stealth", "Stealth knockouts: {n}"), "n", sel.stealthKos) << "\n";
 		}
 
+		CharStats total;
+		total.kills = totalKills;
+		total.kos = totalKOs;
+		total.limbs = totalLimbs;
 		o << "\n" << Lang::tr("stats.squad", "--- Squad total ---") << "\n";
-		o << "   " << statLine(totalKills, totalKOs) << "\n";
+		o << "   " << statLine(total) << "\n";
+		if (totalStealthKOs)
+			o << "   " << Lang::fill(Lang::tr("stats.stealth", "Stealth knockouts: {n}"), "n", totalStealthKOs) << "\n";
 
 		// Lista com a chave junto, pra desambiguar homônimos
 		std::vector<std::pair<CharStats, std::string> > list;
@@ -446,21 +630,33 @@ namespace Stats
 		for (size_t i = 0; i < list.size(); ++i)
 		{
 			const CharStats& c = list[i].first;
-			o << displayName(list[i].second, c.name, c.race) << ":  " << statLine(c.kills, c.kos) << "\n";
+			o << displayName(list[i].second, c.name, c.race) << ":  " << statLine(c) << "\n";
+		}
+
+		if (!killsByRace.empty() || !killsByFaction.empty())
+		{
+			o << "\n" << Lang::tr("stats.victims", "--- Most frequent victims ---") << "\n";
+			if (!killsByRace.empty())
+				o << "   " << Lang::tr("stats.victims_race", "Races:") << " " << topOf(killsByRace, 5) << "\n";
+			if (!killsByFaction.empty())
+				o << "   " << Lang::tr("stats.victims_faction", "Factions:") << " " << topOf(killsByFaction, 5) << "\n";
 		}
 		return o.str();
 	}
 
-	std::vector<std::string> setKnownNames(const std::set<std::string>& races, const std::set<std::string>& factions)
+	std::vector<std::string> setKnownNames(const std::set<std::string>& races, const std::set<std::string>& factions,
+		const std::set<std::string>& npcs)
 	{
 		std::vector<std::string> hidden;
 		for (size_t i = 0; i < achievements.size(); ++i)
 		{
 			Achievement& a = achievements[i];
-			if (a.metric.compare(0, 5, "race_") == 0)
+			if (hasPrefix(a.metric, "race_"))
 				a.available = races.empty() || anyNameMatches(a.arg, races);
-			else if (a.metric.compare(0, 8, "faction_") == 0)
+			else if (hasPrefix(a.metric, "faction_"))
 				a.available = factions.empty() || anyNameMatches(a.arg, factions);
+			else if (hasPrefix(a.metric, "npc_"))
+				a.available = npcs.empty() || anyNameMatches(a.arg, npcs);
 			else
 				a.available = true;
 			if (!a.available)
@@ -469,62 +665,79 @@ namespace Stats
 		return hidden;
 	}
 
-	std::string achievementsReport()
+	namespace
 	{
 		// Visível = existe no jogo carregado, ou já foi liberada neste save (continua aparecendo
 		// mesmo se o mod de origem saiu depois).
+		bool visible(const Achievement& a)
+		{
+			return a.available || unlocked.count(a.id) != 0;
+		}
+
+		void writeAchievement(std::ostringstream& o, const Achievement& a)
+		{
+			if (unlocked.count(a.id))
+			{
+				o << "[X] " << title(a) << "\n";
+			}
+			else if (a.secret)
+			{
+				// Secreta: nada de título, descrição ou progresso até liberar
+				o << "[?] ???  " << Lang::tr("ach.secret", "(secret achievement)") << "\n";
+				return;
+			}
+			else
+			{
+				std::string who;
+				int v = (std::min)(metricValue(a, who), a.target);
+				o << "[ ] " << title(a) << "  (" << v << "/" << a.target << ")\n";
+			}
+			std::string d = description(a);
+			if (!d.empty())
+				o << "      " << d << "\n";
+		}
+	}
+
+	std::string achievementsReport()
+	{
 		int total = 0, done = 0;
+		std::vector<std::string> categories; // na ordem em que aparecem no arquivo
 		for (size_t i = 0; i < achievements.size(); ++i)
 		{
-			bool unlockedHere = unlocked.count(achievements[i].id) != 0;
-			if (achievements[i].available || unlockedHere)
-			{
-				++total;
-				if (unlockedHere)
-					++done;
-			}
+			const Achievement& a = achievements[i];
+			if (!visible(a))
+				continue;
+			++total;
+			if (unlocked.count(a.id))
+				++done;
+			if (std::find(categories.begin(), categories.end(), a.category) == categories.end())
+				categories.push_back(a.category);
 		}
-		std::ostringstream o;
-		o << Lang::fill(Lang::fill(Lang::tr("ach.summary", "Completed: {done}/{total}"),
-			"done", done), "total", total) << "\n\n";
 
-		// Concluídas primeiro, depois as pendentes com progresso
-		for (int pass = 0; pass < 2; ++pass)
+		std::ostringstream o;
+		std::string summary = Lang::tr("ach.summary", "Completed: {done}/{total}");
+		summary = Lang::fill(summary, "done", done);
+		summary = Lang::fill(summary, "total", total);
+		o << summary << "  (" << (total ? done * 100 / total : 0) << "%)\n";
+
+		// Por categoria; dentro de cada uma, concluídas primeiro e depois as pendentes
+		for (size_t c = 0; c < categories.size(); ++c)
 		{
-			o << (pass == 0 ? Lang::tr("ach.done", "--- Completed ---") : Lang::tr("ach.pending", "--- In progress ---")) << "\n";
-			int shown = 0;
-			for (size_t i = 0; i < achievements.size(); ++i)
-			{
-				const Achievement& a = achievements[i];
-				bool done = unlocked.count(a.id) != 0;
-				if (done != (pass == 0))
-					continue;
-				if (!a.available && !done)
-					continue;
-				++shown;
-				if (done)
-				{
-					o << "[X] " << title(a) << "\n";
-				}
-				else
-				{
-					if (a.secret)
-					{
-						// Secreta: nada de título, descrição ou progresso até liberar
-						o << "[?] ???  " << Lang::tr("ach.secret", "(secret achievement)") << "\n";
-						continue;
-					}
-					std::string who;
-					int v = (std::min)(metricValue(a, who), a.target);
-					o << "[ ] " << title(a) << "  (" << v << "/" << a.target << ")\n";
-				}
-				std::string d = description(a);
-				if (!d.empty())
-					o << "      " << d << "\n";
-			}
-			if (!shown)
-				o << "   -\n";
 			o << "\n";
+			if (!categories[c].empty())
+				o << "--- " << Lang::tr("cat." + categories[c], categories[c]) << " ---\n";
+			for (int pass = 0; pass < 2; ++pass)
+			{
+				for (size_t i = 0; i < achievements.size(); ++i)
+				{
+					const Achievement& a = achievements[i];
+					if (a.category != categories[c] || !visible(a))
+						continue;
+					if ((unlocked.count(a.id) != 0) != (pass == 0))
+						continue;
+					writeAchievement(o, a);
+				}
+			}
 		}
 		return o.str();
 	}

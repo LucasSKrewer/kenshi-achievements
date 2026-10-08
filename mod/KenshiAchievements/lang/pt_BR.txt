@@ -4,16 +4,26 @@ panel.title = Kills & Conquistas
 tab.stats = Estatísticas
 tab.achievements = Conquistas
 
-stats.line = Kills: {kills}    KOs: {kos}
+stats.line = Kills: {kills}    KOs: {kos}    Membros: {limbs}
+stats.stealth = Nocautes furtivos: {n}
 stats.no_selection = (nenhum personagem selecionado)
 stats.squad = --- Total do grupo ---
 stats.per_char = --- Por personagem ---
 stats.none = (ninguém ainda)
+stats.victims = --- Vítimas mais frequentes ---
+stats.victims_race = Raças:
+stats.victims_faction = Facções:
 
 ach.summary = Concluídas: {done}/{total}
-ach.done = --- Concluídas ---
 ach.secret = (conquista secreta)
-ach.pending = --- Em andamento ---
+
+cat.General = Geral
+cat.Combat feats = Feitos de combate
+cat.Characters = Personagens
+cat.Creatures = Criaturas
+cat.Factions = Facções
+cat.Bosses = Chefes
+cat.Genesis = Genesis
 
 toast.title = Conquista desbloqueada!
 log.owner = Conquista
@@ -119,3 +129,55 @@ skeleton_scrapyard.title = Ferro-Velho
 skeleton_scrapyard.desc = Destrua 100 esqueletos.
 spider_exterminator.title = Exterminador
 spider_exterminator.desc = Mate 100 aranhas.
+
+# --- v1.2.0: KOs, sequências, membros, furtivos, chefes ---
+ko_10.title = João Pestana
+ko_10.desc = 10 nocautes.
+
+flurry.title = Rajada
+flurry.desc = 3 mortes em 30 segundos.
+massacre.title = Massacre
+massacre.desc = 5 mortes em um minuto.
+clean_sweep.title = Varredura
+clean_sweep.desc = 10 mortes ou nocautes em um minuto.
+
+limb_1.title = Desarmado
+limb_1.desc = Decepe seu primeiro membro.
+limb_25.title = Colecionador de Membros
+limb_25.desc = Decepe 25 membros.
+limb_100.title = O Descascador
+limb_100.desc = Decepe 100 membros.
+solo_limb_25.title = Cirurgião
+solo_limb_25.desc = Um único personagem decepa 25 membros.
+
+stealth_1.title = Apagou a Luz
+stealth_1.desc = Nocauteie alguém das sombras.
+stealth_10.title = Sombra
+stealth_10.desc = 10 nocautes furtivos.
+stealth_50.title = Ninguém Viu Nada
+stealth_50.desc = 50 nocautes furtivos.
+solo_stealth_25.title = Ninja
+solo_stealth_25.desc = Um único personagem com 25 nocautes furtivos.
+
+dust_king.title = Destronado
+dust_king.desc = Derrote o Rei da Poeira.
+bugmaster.title = Controle de Pragas
+bugmaster.desc = Derrote o Bugmaster.
+phoenix.title = Fênix Abatido
+phoenix.desc = Derrote o Lorde Fênix Sagrado.
+inquisition.title = Ninguém Esperava
+inquisition.desc = Derrote os dois Altos Inquisidores.
+tengu.title = Mudança de Regime
+tengu.desc = Derrote o Imperador Tengu.
+nobles.title = Luta de Classes
+nobles.desc = Derrote 5 nobres.
+slavers.title = Correntes Quebradas
+slavers.desc = Derrote os dois Senhores de Escravos.
+esata.title = Quebra-Pedra
+esata.desc = Derrote Esata, a Golem de Pedra.
+tinfist.title = Descanse em Ferrugem
+tinfist.desc = Derrote o Punho de Lata.
+valamon.title = Sem Mais Saques
+valamon.desc = Derrote Valamon.
+catlon.title = Mundo Louco
+catlon.desc = Derrote o Cat-Lon Louco.

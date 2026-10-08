@@ -3,6 +3,7 @@
 panel.title = Kills & Conquistas
 tab.stats = Estatísticas
 tab.achievements = Conquistas
+tab.memorial = Memorial
 
 stats.line = Kills: {kills}    KOs: {kos}    Membros: {limbs}
 stats.stealth = Nocautes furtivos: {n}
@@ -13,6 +14,14 @@ stats.none = (ninguém ainda)
 stats.victims = --- Vítimas mais frequentes ---
 stats.victims_race = Raças:
 stats.victims_faction = Facções:
+stats.deaths = Baixas do grupo: {n}
+stats.fallen = (morto)
+
+mem.none = (ninguém caiu)
+mem.by = Morto por {killer}
+mem.unknown = Causa da morte desconhecida
+mem.day = dia {day}
+mem.record = Kills: {kills}    KOs: {kos}
 
 ach.summary = Concluídas: {done}/{total}
 ach.secret = (conquista secreta)

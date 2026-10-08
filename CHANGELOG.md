@@ -2,6 +2,15 @@
 
 All notable changes to Kenshi Achievements. Versions follow [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+- **Memorial** ([#20](https://github.com/LucasSKrewer/kenshi-achievements/issues/20), requested in the
+  Workshop comments): a third tab in the F6 panel listing the squad members who died, with who killed
+  them, the killer's faction, the game day, and the kills and KOs they had.
+- "Squad losses" in the Statistics tab, and fallen characters are marked in the per-character list.
+- New metric `squad_deaths`, for your own achievements.
+
 ## [1.2.0] — 2026-10-07
 
 ### Added

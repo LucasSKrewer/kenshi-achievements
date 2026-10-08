@@ -274,6 +274,34 @@ int main(int argc, char** argv)
 		check(r.find("(0%)") != std::string::npos, "resumo com porcentagem");
 	}
 
+	// #20 Memorial: baixas do grupo
+	{
+		Stats::reset();
+		check(Stats::memorialReport().find("(ninguém caiu)") != std::string::npos, "memorial vazio");
+		Stats::recordKill("h1", "Kang", "Shek", "Greenlander", "Dust Bandits");
+		Stats::recordKill("h1", "Kang", "Shek", "Greenlander", "Dust Bandits");
+		Stats::recordKO("h1", "Kang", "Shek", "Greenlander", "Dust Bandits");
+		Stats::popUnlocks();
+		Stats::recordSquadDeath("h1", "Kang", "Shek", "Rei da Poeira", "Bandidos da Poeira", 42);
+		Stats::recordSquadDeath("h1", "Kang", "Shek", "outro", "outra", 43); // de novo: ignora
+		Stats::recordSquadDeath("h2", "Fuu", "Camponês", "", "", -1);
+		std::string m = Stats::memorialReport();
+		check(m.find("Baixas do grupo: 2") != std::string::npos, "2 baixas (a repetida não conta)");
+		check(m.find("Kang (Shek)\n   Morto por Rei da Poeira [Bandidos da Poeira], dia 42\n   Kills: 2    KOs: 1") != std::string::npos,
+			"baixa com quem matou, facção, dia e o que tinha feito");
+		check(m.find("Fuu (Camponês)\n   Causa da morte desconhecida\n") != std::string::npos, "baixa sem quem matou nem dia");
+		check(m.find("Fuu") < m.find("Kang"), "mais recente primeiro");
+		std::string st = Stats::statsReport("h1", "Kang");
+		check(st.find("Baixas do grupo: 2") != std::string::npos && st.find("Kang (morto):") != std::string::npos,
+			"estatísticas mostram as baixas e marcam o morto");
+		std::map<std::string, int> ints;
+		std::map<std::string, std::string> strs;
+		Stats::exportTo(ints, strs);
+		Stats::importFrom(ints, strs);
+		check(Stats::memorialReport() == m, "memorial sobrevive ao save/load igualzinho");
+		Stats::reset();
+	}
+
 	Stats::reset();
 	Stats::recordKill("h1", "The Arbiter", "Skeleton Screamer MKII", "Swamp Raptor", "Swamp Creatures");
 	Stats::recordKill("h1", "The Arbiter", "Skeleton Screamer MKII", "Swamp Raptor", "Swamp Creatures");

@@ -8,6 +8,7 @@
 panel.title = Kills & Achievements
 tab.stats = Statistics
 tab.achievements = Achievements
+tab.memorial = Memorial
 
 stats.line = Kills: {kills}    KOs: {kos}    Limbs: {limbs}
 stats.stealth = Stealth knockouts: {n}
@@ -18,6 +19,14 @@ stats.none = (nobody yet)
 stats.victims = --- Most frequent victims ---
 stats.victims_race = Races:
 stats.victims_faction = Factions:
+stats.deaths = Squad losses: {n}
+stats.fallen = (fallen)
+
+mem.none = (nobody has fallen)
+mem.by = Killed by {killer}
+mem.unknown = Cause of death unknown
+mem.day = day {day}
+mem.record = Kills: {kills}    KOs: {kos}
 
 ach.summary = Completed: {done}/{total}
 ach.secret = (secret achievement)

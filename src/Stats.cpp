@@ -19,6 +19,7 @@ namespace Stats
 		int totalKOs = 0;
 		int totalStealthKOs = 0;
 		int totalLimbs = 0;
+		std::vector<Fallen> fallen; // baixas do grupo, na ordem em que aconteceram
 
 		// Sequências: instantes (relógio do jogo, em segundos) das últimas kills/derrubadas do grupo,
 		// e o recorde por tamanho de janela (em segundos).
@@ -46,6 +47,7 @@ namespace Stats
 		const char* const P_BURST_KILLS = "b.k:";
 		const char* const P_BURST_TAKEDOWNS = "b.t:";
 		const char* const P_UNLOCKED = "a:";
+		const char* const P_FALLEN = "d."; // d.<índice>.<campo>
 
 		std::string trim(const std::string& s)
 		{
@@ -168,6 +170,7 @@ namespace Stats
 			if (m == "takedowns") return totalKills + totalKOs;
 			if (m == "limbs") return totalLimbs;
 			if (m == "stealth_kos") return totalStealthKOs;
+			if (m == "squad_deaths") return (int)fallen.size();
 			if (m == "race_kills") return lookup(killsByRace, a.arg);
 			if (m == "race_kos") return lookup(kosByRace, a.arg);
 			if (m == "faction_kills") return lookup(killsByFaction, a.arg);
@@ -219,7 +222,7 @@ namespace Stats
 
 		bool isKnownMetric(const std::string& m)
 		{
-			return m == "kills" || m == "kos" || m == "takedowns" || m == "limbs" || m == "stealth_kos"
+			return m == "kills" || m == "kos" || m == "takedowns" || m == "limbs" || m == "stealth_kos" || m == "squad_deaths"
 				|| m == "char_kills" || m == "char_kos" || m == "char_limbs" || m == "char_stealth_kos"
 				|| m == "race_kills" || m == "race_kos"
 				|| m == "faction_kills" || m == "faction_kos"
@@ -424,6 +427,7 @@ namespace Stats
 		takedownTimes.clear();
 		bestBurstKills.clear();
 		bestBurstTakedowns.clear();
+		fallen.clear();
 		unlocked.clear();
 		pending.clear();
 	}
@@ -446,6 +450,39 @@ namespace Stats
 			c.race = charRace;
 		++c.limbs;
 		++totalLimbs;
+		checkAchievements(true);
+	}
+
+	namespace
+	{
+		bool isFallen(const std::string& key)
+		{
+			for (size_t i = 0; i < fallen.size(); ++i)
+				if (fallen[i].key == key)
+					return true;
+			return false;
+		}
+	}
+
+	void recordSquadDeath(const std::string& key, const std::string& name, const std::string& race,
+		const std::string& killer, const std::string& killerFaction, int day)
+	{
+		if (isFallen(key))
+			return;
+		Fallen f;
+		f.key = key;
+		f.name = name;
+		f.race = race;
+		f.killer = killer;
+		f.killerFaction = killerFaction;
+		f.day = day;
+		std::map<std::string, CharStats>::const_iterator it = chars.find(key);
+		if (it != chars.end())
+		{
+			f.kills = it->second.kills;
+			f.kos = it->second.kos;
+		}
+		fallen.push_back(f);
 		checkAchievements(true);
 	}
 
@@ -511,6 +548,19 @@ namespace Stats
 		for (b = bestBurstTakedowns.begin(); b != bestBurstTakedowns.end(); ++b) ints[P_BURST_TAKEDOWNS + itos(b->first)] = b->second;
 		for (std::set<std::string>::const_iterator a = unlocked.begin(); a != unlocked.end(); ++a)
 			ints[P_UNLOCKED + *a] = 1;
+		for (size_t n = 0; n < fallen.size(); ++n)
+		{
+			const Fallen& f = fallen[n];
+			std::string p = P_FALLEN + itos((int)n) + ".";
+			strs[p + "key"] = f.key;
+			strs[p + "n"] = f.name;
+			if (!f.race.empty()) strs[p + "r"] = f.race;
+			if (!f.killer.empty()) strs[p + "by"] = f.killer;
+			if (!f.killerFaction.empty()) strs[p + "f"] = f.killerFaction;
+			ints[p + "day"] = f.day;
+			ints[p + "kk"] = f.kills;
+			ints[p + "ko"] = f.kos;
+		}
 	}
 
 	void importFrom(const std::map<std::string, int>& ints, const std::map<std::string, std::string>& strs)
@@ -548,6 +598,44 @@ namespace Stats
 			else if (startsWith(it->first, P_CHAR_RACE, rest))
 				chars[rest].race = it->second;
 		}
+		// Baixas: d.<índice>.<campo>, nos dois mapas
+		std::map<int, Fallen> byIndex;
+		for (std::map<std::string, std::string>::const_iterator it = strs.begin(); it != strs.end(); ++it)
+		{
+			std::string rest;
+			if (!startsWith(it->first, P_FALLEN, rest))
+				continue;
+			size_t dot = rest.find('.');
+			if (dot == std::string::npos)
+				continue;
+			Fallen& f = byIndex[atoi(rest.substr(0, dot).c_str())];
+			std::string field = rest.substr(dot + 1);
+			if (field == "key") f.key = it->second;
+			else if (field == "n") f.name = it->second;
+			else if (field == "r") f.race = it->second;
+			else if (field == "by") f.killer = it->second;
+			else if (field == "f") f.killerFaction = it->second;
+		}
+		for (std::map<std::string, int>::const_iterator it = ints.begin(); it != ints.end(); ++it)
+		{
+			std::string rest;
+			if (!startsWith(it->first, P_FALLEN, rest))
+				continue;
+			size_t dot = rest.find('.');
+			if (dot == std::string::npos)
+				continue;
+			int index = atoi(rest.substr(0, dot).c_str());
+			if (byIndex.find(index) == byIndex.end())
+				continue; // sem os dados de texto não é uma baixa válida
+			std::string field = rest.substr(dot + 1);
+			if (field == "day") byIndex[index].day = it->second;
+			else if (field == "kk") byIndex[index].kills = it->second;
+			else if (field == "ko") byIndex[index].kos = it->second;
+		}
+		for (std::map<int, Fallen>::const_iterator it = byIndex.begin(); it != byIndex.end(); ++it)
+			if (!it->second.key.empty() && !isFallen(it->second.key))
+				fallen.push_back(it->second);
+
 		// Conquistas novas no achievements.txt que o save antigo já cumpre: libera sem anunciar.
 		checkAchievements(false);
 	}
@@ -617,6 +705,8 @@ namespace Stats
 		o << "   " << statLine(total) << "\n";
 		if (totalStealthKOs)
 			o << "   " << Lang::fill(Lang::tr("stats.stealth", "Stealth knockouts: {n}"), "n", totalStealthKOs) << "\n";
+		if (!fallen.empty())
+			o << "   " << Lang::fill(Lang::tr("stats.deaths", "Squad losses: {n}"), "n", (int)fallen.size()) << "\n";
 
 		// Lista com a chave junto, pra desambiguar homônimos
 		std::vector<std::pair<CharStats, std::string> > list;
@@ -630,7 +720,9 @@ namespace Stats
 		for (size_t i = 0; i < list.size(); ++i)
 		{
 			const CharStats& c = list[i].first;
-			o << displayName(list[i].second, c.name, c.race) << ":  " << statLine(c) << "\n";
+			o << displayName(list[i].second, c.name, c.race)
+				<< (isFallen(list[i].second) ? " " + Lang::tr("stats.fallen", "(fallen)") : "")
+				<< ":  " << statLine(c) << "\n";
 		}
 
 		if (!killsByRace.empty() || !killsByFaction.empty())
@@ -640,6 +732,36 @@ namespace Stats
 				o << "   " << Lang::tr("stats.victims_race", "Races:") << " " << topOf(killsByRace, 5) << "\n";
 			if (!killsByFaction.empty())
 				o << "   " << Lang::tr("stats.victims_faction", "Factions:") << " " << topOf(killsByFaction, 5) << "\n";
+		}
+		return o.str();
+	}
+
+	std::string memorialReport()
+	{
+		std::ostringstream o;
+		o << Lang::fill(Lang::tr("stats.deaths", "Squad losses: {n}"), "n", (int)fallen.size()) << "\n";
+		if (fallen.empty())
+		{
+			o << "\n" << Lang::tr("mem.none", "(nobody has fallen)") << "\n";
+			return o.str();
+		}
+		// Mais recente primeiro
+		for (size_t n = fallen.size(); n-- > 0;)
+		{
+			const Fallen& f = fallen[n];
+			o << "\n" << f.name;
+			if (!f.race.empty())
+				o << " (" << f.race << ")";
+			o << "\n   ";
+			if (f.killer.empty())
+				o << Lang::tr("mem.unknown", "Cause of death unknown");
+			else
+				o << Lang::fill(Lang::tr("mem.by", "Killed by {killer}"), "killer", f.killer);
+			if (!f.killerFaction.empty())
+				o << " [" << f.killerFaction << "]";
+			if (f.day >= 0)
+				o << ", " << Lang::fill(Lang::tr("mem.day", "day {day}"), "day", f.day);
+			o << "\n   " << Lang::fill(Lang::fill(Lang::tr("mem.record", "Kills: {kills}    KOs: {kos}"), "kills", f.kills), "kos", f.kos) << "\n";
 		}
 		return o.str();
 	}

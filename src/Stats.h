@@ -34,10 +34,20 @@ namespace Stats
 		Takedown() : stealth(false), time(-1.0) {}
 	};
 
+	// Personagem do grupo que morreu (aba Memorial, #20).
+	struct Fallen
+	{
+		std::string key, name, race;       // quem morreu
+		std::string killer, killerFaction; // quem matou (vazio = desconhecido)
+		int kills, kos;                    // o que ele tinha feito até ali
+		int day;                           // dia do jogo; < 0 = desconhecido
+		Fallen() : kills(0), kos(0), day(-1) {}
+	};
+
 	struct Achievement
 	{
 		std::string id;
-		// kills, kos, takedowns, limbs, stealth_kos                     -> grupo
+		// kills, kos, takedowns, limbs, stealth_kos, squad_deaths       -> grupo
 		// char_kills, char_kos, char_limbs, char_stealth_kos            -> melhor personagem
 		// race_kills, race_kos, faction_kills, faction_kos, npc_kills, npc_kos, npc_takedowns : <nome> (aceita * e ,)
 		// burst_kills, burst_takedowns : <segundos>                     -> recorde de N em X segundos de jogo
@@ -79,6 +89,10 @@ namespace Stats
 	// Membro decepado por um personagem do jogador.
 	void recordLimb(const std::string& key, const std::string& name, const std::string& charRace);
 
+	// Morte de um personagem do grupo. Conta uma vez por personagem (key).
+	void recordSquadDeath(const std::string& key, const std::string& name, const std::string& race,
+		const std::string& killer, const std::string& killerFaction, int day);
+
 	// Atalhos antigos (sem NPC, furtivo ou relógio).
 	void recordKill(const std::string& key, const std::string& name, const std::string& charRace,
 		const std::string& race, const std::string& faction);
@@ -98,4 +112,7 @@ namespace Stats
 
 	// Aba "Conquistas": por categoria, concluídas e pendentes com progresso.
 	std::string achievementsReport();
+
+	// Aba "Memorial": quem do grupo morreu, quem matou, quando e o que tinha feito.
+	std::string memorialReport();
 }

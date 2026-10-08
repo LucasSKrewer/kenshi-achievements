@@ -64,7 +64,7 @@ namespace
 
 	const DWORD HIT_MEMORY_MS = 30000;  // quanto tempo um golpe do jogador vale para autoria
 	const DWORD TOAST_MS = 6000;
-	const char* const VERSION = "1.2.0";
+	const char* const VERSION = "1.3.0";
 	double gameClock = 0.0; // segundos de jogo (ver tickGameClock)
 	const DWORD LIMB_HIT_MS = 2000; // membro decepado só conta com golpe do grupo nesse intervalo (#19)
 	int panelKey = VK_F6; // @tecla no achievements.txt. F9 é o quickload do Kenshi, F5 o quicksave.
@@ -78,6 +78,16 @@ namespace
 		DWORD tick;
 	};
 	std::set<std::string> downNow; // vítimas que já sabemos que estão caídas (não conta o KO de novo)
+
+	// Último agressor de cada personagem do grupo (#20): usado no Memorial quando o jogo não informa
+	// quem matou (ex.: sangrou até morrer). Guarda os nomes porque o agressor pode sumir.
+	struct SquadHit
+	{
+		std::string name, faction;
+		DWORD tick;
+	};
+	std::map<std::string, SquadHit> lastHitOnSquad; // chave = handle do personagem do grupo
+	const DWORD SQUAD_HIT_MS = 10 * 60 * 1000; // sangrar até morrer pode demorar
 	std::map<std::string, LastHit> lastPlayerHit; // chave = handle da vítima
 	std::set<std::string> countedDeaths;
 	const DWORD KO_DEDUPE_MS = 10000; // knockout() repetido na mesma vítima em menos que isso não conta de novo
@@ -271,6 +281,37 @@ namespace
 			Stats::recordKO(t);
 	}
 
+	// Memorial (#20): morte de um personagem do grupo.
+	void recordSquadDeath(Character* victim)
+	{
+		boost::lock_guard<boost::mutex> g(lock);
+		std::string key = charKey(victim);
+		std::string killer, faction;
+		Character* by = victim->lastGuyWhoDefeatedMe.getCharacter();
+		if (by && !by->isPlayerCharacter())
+		{
+			killer = by->getName();
+			faction = factionName(by);
+		}
+		else
+		{
+			std::map<std::string, SquadHit>::iterator it = lastHitOnSquad.find(key);
+			if (it != lastHitOnSquad.end() && GetTickCount() - it->second.tick <= SQUAD_HIT_MS)
+			{
+				killer = it->second.name;
+				faction = it->second.faction;
+			}
+		}
+		lastHitOnSquad.erase(key);
+		int day = -1;
+		if (ou)
+			day = (int)ou->getTimeStamp_inGameHours().getTotalDays() + 1;
+		std::ostringstream o;
+		o << "  BAIXA do grupo: " << describe(victim) << ", morto por '" << killer << "' [" << faction << "], dia " << day;
+		dbg(o.str());
+		Stats::recordSquadDeath(key, victim->getName(), raceName(victim), killer, faction, day);
+	}
+
 	void onTakedown(Character* victim, bool kill, bool wasUnconscious = false)
 	{
 		if (!victim)
@@ -278,7 +319,10 @@ namespace
 		dbg(std::string(kill ? "MORTE" : "KO") + " de " + describe(victim));
 		if (victim->isPlayerCharacter())
 		{
-			dbg("  ignorado: vítima é do jogador");
+			if (kill)
+				recordSquadDeath(victim);
+			else
+				dbg("  ignorado: vítima é do jogador");
 			return;
 		}
 
@@ -467,6 +511,16 @@ namespace
 
 	void rememberHit(Character* victim, Character* attacker)
 	{
+		if (victim && attacker && victim->isPlayerCharacter() && !attacker->isPlayerCharacter())
+		{
+			boost::lock_guard<boost::mutex> g(lock);
+			SquadHit h;
+			h.name = attacker->getName();
+			h.faction = factionName(attacker);
+			h.tick = GetTickCount();
+			lastHitOnSquad[handleKey(victim)] = h;
+			return;
+		}
 		if (!victim || !attacker || !attacker->isPlayerCharacter() || victim->isPlayerCharacter())
 			return;
 		if (debug && debugHits < 60)
@@ -495,6 +549,7 @@ namespace
 		pendingKOs.clear();
 		downedBy.clear();
 		downNow.clear();
+		lastHitOnSquad.clear();
 	}
 
 	// ---------- hooks de combate ----------
@@ -659,7 +714,8 @@ namespace
 	MyGUI::EditBox* panelText = NULL;
 	MyGUI::Button* tabStats = NULL;
 	MyGUI::Button* tabAchievements = NULL;
-	int currentTab = 0; // 0 = estatísticas, 1 = conquistas (lembrado entre aberturas)
+	MyGUI::Button* tabMemorial = NULL;
+	int currentTab = 0; // 0 = estatísticas, 1 = conquistas, 2 = memorial (lembrado entre aberturas)
 	std::string panelLastText; // só reescreve o texto quando muda (setCaption volta a rolagem pro topo)
 	bool panelCloseRequested = false;
 	DWORD panelRefreshedAt = 0;
@@ -678,12 +734,14 @@ namespace
 			tabStats->setStateSelected(tab == 0);
 		if (tabAchievements)
 			tabAchievements->setStateSelected(tab == 1);
+		if (tabMemorial)
+			tabMemorial->setStateSelected(tab == 2);
 		panelRefreshedAt = 0; // força refresh no próximo frame
 	}
 
 	void onTabClick(MyGUI::Widget* sender)
 	{
-		selectTab(sender == tabAchievements ? 1 : 0);
+		selectTab(sender == tabAchievements ? 1 : (sender == tabMemorial ? 2 : 0));
 	}
 
 	// Texto da aba atual. Chamar na thread principal (lê o personagem selecionado).
@@ -693,6 +751,11 @@ namespace
 		{
 			boost::lock_guard<boost::mutex> g(lock);
 			return Stats::achievementsReport();
+		}
+		if (currentTab == 2)
+		{
+			boost::lock_guard<boost::mutex> g(lock);
+			return Stats::memorialReport();
 		}
 		std::string selKey, selName;
 		Character* sel = (ou && ou->player) ? ou->player->selectedCharacter.getCharacter() : NULL;
@@ -794,6 +857,7 @@ namespace
 			panelText = NULL;
 			tabStats = NULL;
 			tabAchievements = NULL;
+			tabMemorial = NULL;
 			return;
 		}
 		panel = gui->createWidgetReal<MyGUI::Window>("Kenshi_WindowCX", 0.30f, 0.15f, 0.40f, 0.65f,
@@ -801,15 +865,19 @@ namespace
 		panel->setCaption(Lang::tr("panel.title", "Kills & Achievements") + "  v" + VERSION);
 		MyGUI::Widget* client = panel->getClientWidget();
 
-		// Abas: dois botões no topo, o da aba atual fica "selecionado"
-		tabStats = client->createWidgetReal<MyGUI::Button>("Kenshi_Button1", 0.02f, 0.01f, 0.47f, 0.07f,
+		// Abas: três botões no topo, o da aba atual fica "selecionado"
+		tabStats = client->createWidgetReal<MyGUI::Button>("Kenshi_Button1", 0.02f, 0.01f, 0.31f, 0.07f,
 			MyGUI::Align::Top | MyGUI::Align::HStretch);
 		tabStats->setCaption(Lang::tr("tab.stats", "Statistics"));
 		tabStats->eventMouseButtonClick += MyGUI::newDelegate(onTabClick);
-		tabAchievements = client->createWidgetReal<MyGUI::Button>("Kenshi_Button1", 0.51f, 0.01f, 0.47f, 0.07f,
+		tabAchievements = client->createWidgetReal<MyGUI::Button>("Kenshi_Button1", 0.345f, 0.01f, 0.31f, 0.07f,
 			MyGUI::Align::Top | MyGUI::Align::HStretch);
 		tabAchievements->setCaption(Lang::tr("tab.achievements", "Achievements"));
 		tabAchievements->eventMouseButtonClick += MyGUI::newDelegate(onTabClick);
+		tabMemorial = client->createWidgetReal<MyGUI::Button>("Kenshi_Button1", 0.67f, 0.01f, 0.31f, 0.07f,
+			MyGUI::Align::Top | MyGUI::Align::HStretch);
+		tabMemorial->setCaption(Lang::tr("tab.memorial", "Memorial"));
+		tabMemorial->eventMouseButtonClick += MyGUI::newDelegate(onTabClick);
 
 		// Mesma skin/propriedades do log de mensagens do jogo (MessagesTextBox em Kenshi_OverviewWindow.layout):
 		// multilinha, texto no topo e barra de rolagem. A Kenshi_EditBox é de uma linha só (mostrava só a 1ª linha).

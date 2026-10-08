@@ -65,6 +65,7 @@ namespace
 	const DWORD HIT_MEMORY_MS = 30000;  // quanto tempo um golpe do jogador vale para autoria
 	const DWORD TOAST_MS = 6000;
 	const char* const VERSION = "1.2.0";
+	double gameClock = 0.0; // segundos de jogo (ver tickGameClock)
 	const DWORD LIMB_HIT_MS = 2000; // membro decepado só conta com golpe do grupo nesse intervalo (#19)
 	int panelKey = VK_F6; // @tecla no achievements.txt. F9 é o quickload do Kenshi, F5 o quicksave.
 
@@ -257,7 +258,7 @@ namespace
 		if (victim->isUnique())
 			t.npc = Lang::toEnglish(victim->getName()); // chefes e NPCs únicos (#11)
 		t.stealth = stealth;
-		t.time = ou ? ou->getTimeStamp() : -1.0; // relógio do jogo, pras sequências (#12)
+		t.time = gameClock; // relógio do jogo, pras sequências (#12)
 		if (debug)
 		{
 			std::ostringstream o;
@@ -412,6 +413,23 @@ namespace
 	// último golpe, e ele fica registrado como quem derrubou. Thread principal.
 	DWORD lastPoll = 0;
 
+	// Relógio do jogo pras sequências (#12): tempo real x velocidade do jogo, parado na pausa.
+	// (GameWorld::getTimeStamp é tempo real desde a abertura: conta a pausa e ignora o 2x/5x.)
+	DWORD lastClockTick = 0;
+
+	void tickGameClock()
+	{
+		DWORD now = GetTickCount();
+		if (lastClockTick && ou && !ou->isPaused())
+		{
+			double dt = (now - lastClockTick) / 1000.0;
+			if (dt > 1.0)
+				dt = 1.0; // engasgo ou tela de carregamento não vira tempo de jogo
+			gameClock += dt * ou->getFrameSpeedMultiplier();
+		}
+		lastClockTick = now;
+	}
+
 	void pollDowned()
 	{
 		DWORD now = GetTickCount();
@@ -531,26 +549,30 @@ namespace
 	void (*amputate_orig)(MedicalSystem*, RobotLimbs::Limb, bool, const Ogre::Vector3&) = NULL;
 	void amputate_hook(MedicalSystem* self, RobotLimbs::Limb limb, bool createSeveredItem, const Ogre::Vector3& force)
 	{
-		Character* victim = self->me;
-		if (victim && !victim->isPlayerCharacter())
-		{
-			boost::lock_guard<boost::mutex> g(lock);
-			std::map<std::string, LastHit>::iterator it = lastPlayerHit.find(handleKey(victim));
-			if (it != lastPlayerHit.end() && GetTickCount() - it->second.tick <= LIMB_HIT_MS)
-			{
-				Character* attacker = it->second.attacker.getCharacter();
-				if (attacker && attacker->isPlayerCharacter())
-				{
-					dbg("MEMBRO decepado de " + describe(victim) + " por " + describe(attacker));
-					Stats::recordLimb(charKey(attacker), attacker->getName(), raceName(attacker));
-				}
-			}
-			else if (debug)
-			{
-				dbg("membro perdido por " + describe(victim) + " sem golpe recente do jogador: não contado");
-			}
-		}
+		// O jogo chama amputate a cada frame pra certas criaturas (Skimmers, aranhas...) sem mudar nada:
+		// só vale quando o membro realmente vira cotoco.
+		LimbState before = self->getLimbState(limb);
 		amputate_orig(self, limb, createSeveredItem, force);
+		if (before == LIMB_STUMP || self->getLimbState(limb) != LIMB_STUMP)
+			return;
+
+		Character* victim = self->me;
+		if (!victim || victim->isPlayerCharacter())
+			return;
+		boost::lock_guard<boost::mutex> g(lock);
+		std::map<std::string, LastHit>::iterator it = lastPlayerHit.find(handleKey(victim));
+		Character* attacker = NULL;
+		if (it != lastPlayerHit.end() && GetTickCount() - it->second.tick <= LIMB_HIT_MS)
+			attacker = it->second.attacker.getCharacter();
+		if (attacker && attacker->isPlayerCharacter())
+		{
+			dbg("MEMBRO decepado de " + describe(victim) + " por " + describe(attacker));
+			Stats::recordLimb(charKey(attacker), attacker->getName(), raceName(attacker));
+		}
+		else
+		{
+			dbg("membro perdido por " + describe(victim) + " sem golpe recente do jogador: não contado");
+		}
 	}
 
 	bool (*iShotYou_orig)(Character*, Character*, Harpoon*, bool) = NULL;
@@ -893,6 +915,7 @@ namespace
 			dbg("mainLoop ativo (UI ok)");
 		}
 
+		tickGameClock();
 		resolvePendingKOs();
 		pollDowned();
 		checkKnownNames();

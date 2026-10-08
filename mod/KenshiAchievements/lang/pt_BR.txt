@@ -141,14 +141,14 @@ massacre.desc = 5 mortes em um minuto.
 clean_sweep.title = Varredura
 clean_sweep.desc = 10 mortes ou nocautes em um minuto.
 
-limb_1.title = Desarmado
-limb_1.desc = Decepe seu primeiro membro.
-limb_25.title = Colecionador de Membros
-limb_25.desc = Decepe 25 membros.
-limb_100.title = O Descascador
-limb_100.desc = Decepe 100 membros.
-solo_limb_25.title = Cirurgião
-solo_limb_25.desc = Um único personagem decepa 25 membros.
+sever_1.title = Desarmado
+sever_1.desc = Decepe seu primeiro membro.
+sever_25.title = Colecionador de Membros
+sever_25.desc = Decepe 25 membros.
+sever_100.title = O Descascador
+sever_100.desc = Decepe 100 membros.
+solo_sever_25.title = Cirurgião
+solo_sever_25.desc = Um único personagem decepa 25 membros.
 
 stealth_1.title = Apagou a Luz
 stealth_1.desc = Nocauteie alguém das sombras.

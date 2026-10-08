@@ -35,6 +35,7 @@ int main(int argc, char** argv)
 	check(Lang::toEnglish("Raptor do Pântano") == "Swamp Raptor", "Raptor do Pântano -> Swamp Raptor (visto no jogo como raça)");
 	check(Lang::toEnglish("Tartaruga do Pântano") == "Swamp Turtle", "Tartaruga do Pântano -> Swamp Turtle (RACE)");
 	check(Lang::toEnglish("Bicudo") == "Beak Thing", "Bicudo -> Beak Thing (visto no save do jogo)");
+	check(Lang::toEnglish("Mestre dos Insetos") == "Bugmaster", "Mestre dos Insetos -> Bugmaster (entrada SQUAD_TEMPLATE)");
 	check(Lang::toEnglish("Skeleton Screamer MKII") == "Skeleton Screamer MKII", "nome do Genesis sem tradução passa direto");
 	printf("  Nação Sagrada? -> '%s'\n", Lang::toEnglish("Nação Sagrada").c_str());
 

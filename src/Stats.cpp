@@ -34,7 +34,7 @@ namespace Stats
 		const char* const P_CHAR_KILLS = "c.k:";
 		const char* const P_CHAR_KOS = "c.o:";
 		const char* const P_CHAR_STEALTH = "c.s:";
-		const char* const P_CHAR_LIMBS = "c.l:";
+		const char* const P_CHAR_LIMBS = "c.v:"; // "c.l:" foi usada numa versão de teste que contava errado
 		const char* const P_CHAR_NAME = "c.n:";
 		const char* const P_CHAR_RACE = "c.r:";
 		const char* const P_RACE_KILLS = "r.k:";
@@ -488,7 +488,7 @@ namespace Stats
 		ints["total.k"] = totalKills;
 		ints["total.o"] = totalKOs;
 		if (totalStealthKOs) ints["total.s"] = totalStealthKOs;
-		if (totalLimbs) ints["total.l"] = totalLimbs;
+		if (totalLimbs) ints["total.v"] = totalLimbs;
 		for (std::map<std::string, CharStats>::const_iterator it = chars.begin(); it != chars.end(); ++it)
 		{
 			ints[P_CHAR_KILLS + it->first] = it->second.kills;
@@ -524,7 +524,7 @@ namespace Stats
 			if (k == "total.k") totalKills = v;
 			else if (k == "total.o") totalKOs = v;
 			else if (k == "total.s") totalStealthKOs = v;
-			else if (k == "total.l") totalLimbs = v;
+			else if (k == "total.v") totalLimbs = v;
 			else if (startsWith(k, P_CHAR_KILLS, rest)) chars[rest].kills = v;
 			else if (startsWith(k, P_CHAR_KOS, rest)) chars[rest].kos = v;
 			else if (startsWith(k, P_CHAR_STEALTH, rest)) chars[rest].stealthKos = v;

@@ -13,7 +13,7 @@ All notable changes to Kenshi Achievements. Versions follow [Semantic Versioning
   `char_stealth_kos`.
 - **Kill streaks** ([#12](https://github.com/LucasSKrewer/kenshi-achievements/issues/12)):
   `burst_kills:<seconds>` and `burst_takedowns:<seconds>` track the most kills (or kills + KOs) within
-  that many seconds of game time. Pausing doesn't count.
+  that many seconds of game time: paused time doesn't count and the game speed (2x, 5x) does.
 - **Bosses and unique NPCs** ([#11](https://github.com/LucasSKrewer/kenshi-achievements/issues/11)):
   `npc_kills`, `npc_kos` and `npc_takedowns` (kill or knock out) by name, for unique characters only.
 - **23 new achievements** (68 in total):
@@ -33,6 +33,8 @@ All notable changes to Kenshi Achievements. Versions follow [Semantic Versioning
 ### Changed
 - Translated names with Kenshi's gender tags (e.g. "Senhor/AF/ de Escravos") are also mapped back to
   English in their plain form.
+- The translated-name map now uses every short entry in `gamedata.po`, not only name entries: the
+  Bugmaster is translated through a squad-template entry ("Mestre dos Insetos") and was hidden.
 
 ## [1.1.1] — 2026-10-02
 

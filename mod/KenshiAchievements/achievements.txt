@@ -59,9 +59,9 @@ takedown_1000 | takedowns  | 1000 | Nobody Stays Standing | 1000 kills + knockou
 flurry        | burst_kills:30     | 3  | Flurry        | 3 kills within 30 seconds.
 massacre      | burst_kills:60     | 5  | Massacre      | 5 kills within a minute.
 clean_sweep   | burst_takedowns:60 | 10 | Clean Sweep   | 10 kills or knockouts within a minute.
-limb_1        | limbs       | 1   | Disarmed        | Sever your first limb.
-limb_25       | limbs       | 25  | Limb Collector  | Sever 25 limbs.
-limb_100      | limbs       | 100 | The Peeler      | Sever 100 limbs.
+sever_1        | limbs       | 1   | Disarmed        | Sever your first limb.
+sever_25       | limbs       | 25  | Limb Collector  | Sever 25 limbs.
+sever_100      | limbs       | 100 | The Peeler      | Sever 100 limbs.
 stealth_1     | stealth_kos | 1   | Lights Out      | Knock someone out from the shadows.
 stealth_10    | stealth_kos | 10  | Shadow          | 10 stealth knockouts.
 stealth_50    | stealth_kos | 50  | Nobody Saw a Thing | 50 stealth knockouts.
@@ -70,7 +70,7 @@ stealth_50    | stealth_kos | 50  | Nobody Saw a Thing | 50 stealth knockouts.
 solo_50       | char_kills | 50   | One-Man Army         | A single character with 50 kills.
 solo_200      | char_kills | 200  | Walking Legend       | A single character with 200 kills.
 solo_ko_100   | char_kos   | 100  | Specialist           | A single character with 100 knockouts.
-solo_limb_25  | char_limbs | 25   | Surgeon              | A single character severs 25 limbs.
+solo_sever_25  | char_limbs | 25   | Surgeon              | A single character severs 25 limbs.
 solo_stealth_25 | char_stealth_kos | 25 | Ninja          | A single character with 25 stealth knockouts.
 
 [Creatures]

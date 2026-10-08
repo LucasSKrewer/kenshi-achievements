@@ -151,10 +151,11 @@ namespace Lang
 
 	// Entradas do .po:  msgctxt "RACE,Greenlander,"  msgid "Greenlander"  msgstr "Camponês"
 	//
-	// O Kenshi traduz o nome pelo texto em inglês, qualquer que seja o tipo: a raça "Leviathan" só tem
-	// entrada ANIMAL_CHARACTER no .po e mesmo assim chega como "Leviatã". Por isso vale toda entrada
-	// de NOME ("TIPO,Nome," com msgid == Nome; descrições têm um 3º campo), e RACE/FACTION têm
-	// prioridade se o mesmo texto traduzido vier de mais de um nome.
+	// O Kenshi traduz o nome pelo texto em inglês, venha a entrada de onde vier: a raça "Leviathan" só
+	// tem entrada ANIMAL_CHARACTER e chega como "Leviatã"; o personagem "Bugmaster" só tem
+	// "SQUAD_TEMPLATE,Bugmaster,building name" e chega como "Mestre dos Insetos". Por isso vale
+	// qualquer entrada curta, com prioridade quando o mesmo texto traduzido vem de mais de uma:
+	//   2 = RACE/FACTION   1 = entrada de nome ("TIPO,Nome,")   0 = o resto (até 60 caracteres)
 	int loadGameNames(const std::string& poPath)
 	{
 		english.clear();
@@ -162,7 +163,7 @@ namespace Lang
 		if (!in)
 			return 0;
 
-		std::map<std::string, bool> fromRaceOrFaction; // tradução -> veio de RACE/FACTION
+		std::map<std::string, int> priorityOf; // tradução -> prioridade da entrada que a definiu
 		std::string line, ctx, id, str, *current = NULL;
 		int n = 0;
 		for (bool more = true; more;)
@@ -176,20 +177,21 @@ namespace Lang
 				size_t comma = ctx.find(',');
 				bool isNameEntry = comma != std::string::npos && !id.empty()
 					&& ctx.compare(comma + 1, std::string::npos, id + ",") == 0;
-				if (isNameEntry && !str.empty() && str != id)
+				bool isShort = !id.empty() && id.size() <= 60 && id.find('\n') == std::string::npos;
+				if ((isNameEntry || isShort) && !str.empty() && str != id)
 				{
-					bool priority = startsWith(ctx, "RACE,") || startsWith(ctx, "FACTION,");
+					int priority = (startsWith(ctx, "RACE,") || startsWith(ctx, "FACTION,")) ? 2 : (isNameEntry ? 1 : 0);
 					std::map<std::string, std::string>::iterator e = english.find(str);
 					if (e == english.end())
 					{
 						english[str] = id;
-						fromRaceOrFaction[str] = priority;
+						priorityOf[str] = priority;
 						++n;
 					}
-					else if (priority && !fromRaceOrFaction[str])
+					else if (priority > priorityOf[str])
 					{
-						e->second = id; // RACE/FACTION vence um nome de outro tipo
-						fromRaceOrFaction[str] = true;
+						e->second = id;
+						priorityOf[str] = priority;
 					}
 					// Marcas de gênero do Kenshi ("Senhor/AF/ de Escravos"): o jogo pode mostrar o nome
 					// já resolvido, então aprende também a forma sem a marca.

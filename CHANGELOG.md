@@ -2,7 +2,7 @@
 
 All notable changes to Kenshi Achievements. Versions follow [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [1.2.0] — 2026-10-07
 
 ### Added
 - **Limbs severed** ([#19](https://github.com/LucasSKrewer/kenshi-achievements/issues/19), suggested by
@@ -129,6 +129,7 @@ and [GitHub release](https://github.com/LucasSKrewer/kenshi-achievements/release
 - Tested with Genesis and a typical Workshop mod list. The mod doesn't change game data, so load
   order doesn't matter.
 
+[1.2.0]: https://github.com/LucasSKrewer/kenshi-achievements/releases/tag/v1.2.0
 [1.1.1]: https://github.com/LucasSKrewer/kenshi-achievements/releases/tag/v1.1.1
 [1.1.0]: https://github.com/LucasSKrewer/kenshi-achievements/releases/tag/v1.1.0
 [1.0.0]: https://github.com/LucasSKrewer/kenshi-achievements/releases/tag/v1.0.0

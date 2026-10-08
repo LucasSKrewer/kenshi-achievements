@@ -1,5 +1,5 @@
 [h1]Kenshi Achievements[/h1]
-Tracks every [b]kill[/b] and [b]knockout[/b] your squad makes, per character, and unlocks [b]achievements[/b] with an in-game popup and sound. Press [b]F6[/b] for the stats panel.
+Tracks every [b]kill[/b], [b]knockout[/b] and [b]severed limb[/b] your squad makes, per character, and unlocks [b]achievements[/b] with an in-game popup and sound. Press [b]F6[/b] for the stats panel.
 
 [h2]⚠️ REQUIRES RE_KENSHI[/h2]
 This is an [b]RE_Kenshi plugin[/b] (a DLL). Without RE_Kenshi it does nothing.
@@ -10,15 +10,15 @@ This is an [b]RE_Kenshi plugin[/b] (a DLL). Without RE_Kenshi it does nothing.
 
 [h2]Features[/h2]
 [list]
-[*][b]Kill & knockout counter per squad member[/b] — kills and KOs counted separately, plus totals by victim race and faction.
-[*]Works for melee, ranged, animals and [b]stealth knockouts / assassinations[/b].
-[*][b]45 achievements[/b] with an on-screen popup, a message-log entry and Kenshi's own notification sound (follows your game volume): kill/KO milestones, single-character feats, and famous factions and creatures (Cannibals, Fogmen, Skin Bandits, Leviathan, Hive Queen...).
+[*][b]Kill, knockout and severed-limb counter per squad member[/b] — counted separately, plus totals by victim race and faction.
+[*]Works for melee, ranged, animals and [b]stealth knockouts / assassinations[/b] (counted on their own too). A victim that dies while down counts for whoever knocked it down.
+[*][b]68 achievements[/b] with an on-screen popup, a message-log entry and Kenshi's own notification sound (follows your game volume): kill/KO milestones, kill streaks, severed limbs, single-character feats, famous factions and creatures (Cannibals, Fogmen, Skin Bandits, Leviathan, Hive Queen...) and [b]bosses[/b] (Dust King, Holy Lord Phoenix, Emperor Tengu, Tinfist...).
 [*][b]Genesis support[/b] — 11 achievements for Genesis content (Primordial Hive, MKIV skeletons, Giant, Broodmother, The Wolven Order...). Achievements for content you don't have installed are [b]hidden automatically[/b].
 [*][b]Secret achievements[/b] shown as ??? until you unlock them.
 [*][b]F6 panel[/b] with two tabs:
 [list]
-[*][b]Statistics[/b] — the selected character at the top, then the squad total and every character.
-[*][b]Achievements[/b] — completed and in progress, with progress like (3/10).
+[*][b]Statistics[/b] — the selected character at the top, then the squad total, every character and your most frequent victims.
+[*][b]Achievements[/b] — grouped by category, completed and in progress, with progress like (3/10).
 [/list]
 [*]Stats are saved [b]inside your save file[/b] — each save has its own counters.
 [*][b]Any game language[/b] — the UI follows Kenshi's language setting, and translated race/faction names are mapped back to English with the game's own dictionary, so achievements work the same everywhere. Included: English and Português (Brasil).
@@ -27,7 +27,7 @@ This is an [b]RE_Kenshi plugin[/b] (a DLL). Without RE_Kenshi it does nothing.
 [h2]Customize[/h2]
 Everything lives in [b]achievements.txt[/b] inside the mod folder — no recompiling:
 [list]
-[*]Add or edit achievements: total kills/KOs, best single character, kills of a race or faction (wildcards like [i]*Skeleton*[/i] work great with mods that add variants).
+[*]Add or edit achievements: total kills/KOs/limbs, best single character, kills of a race or faction (wildcards like [i]*Skeleton*[/i] work great with mods that add variants), unique NPCs by name, and streaks like "5 kills within a minute".
 [*][b]@sound[/b] — any Kenshi notification sound, your own .wav, or none.
 [*][b]@key[/b] — panel key (default F6; F9 is Kenshi's quickload).
 [/list]

@@ -313,6 +313,31 @@ int main(int argc, char** argv)
 	printf("\n===== aba Estatísticas =====\n%s", painel.c_str());
 	printf("===== aba Conquistas =====\n%s", Stats::achievementsReport().c_str());
 
+	// #21: @victims controla quantas vítimas listar; "all" mostra todas, uma por linha
+	{
+		Stats::reset();
+		const char* racas[] = { "Shek", "Greenlander", "Scorchlander", "Swamp Raptor", "Bonedog", "Garru", "Goat" };
+		for (int i = 0; i < 7; ++i)
+			for (int k = 0; k <= i; ++k)
+				Stats::recordKill("h1", "Fuu", "Greenlander", racas[i], "Dust Bandits");
+		std::string r = Stats::statsReport("h1", "Fuu");
+		check(r.find("Raças: Goat 7, Garru 6, Bonedog 5, Swamp Raptor 4, Scorchlander 3\n") != std::string::npos,
+			"@victims = 5 (padrão): top 5 numa linha, sem a 6ª");
+
+		std::string tmp = "build\\tests\\victims_all.txt";
+		FILE* f = fopen(tmp.c_str(), "w");
+		fputs("@victims = all\nfirst_blood | kills | 1 | First Blood | Kill.\n", f);
+		fclose(f);
+		std::vector<std::string> errs;
+		Stats::loadAchievements(tmp, errs);
+		r = Stats::statsReport("h1", "Fuu");
+		check(r.find("   Raças:\n      Goat  7\n      Garru  6\n") != std::string::npos && r.find("      Shek  1\n") != std::string::npos,
+			"@victims = all: todas, uma por linha");
+		check(r.find("   Facções: Dust Bandits 28\n") != std::string::npos, "lista curta continua numa linha");
+		Stats::loadAchievements(mod + "achievements.txt", errs); // volta o arquivo de verdade
+		Stats::reset();
+	}
+
 	printf("\n%s (%d falha(s))\n", falhas ? "FALHOU" : "TUDO OK", falhas);
 	return falhas ? 1 : 0;
 }

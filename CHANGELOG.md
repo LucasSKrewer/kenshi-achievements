@@ -10,6 +10,9 @@ All notable changes to Kenshi Achievements. Versions follow [Semantic Versioning
   them, the killer's faction, the game day, and the kills and KOs they had.
 - "Squad losses" in the Statistics tab, and fallen characters are marked in the per-character list.
 - New metric `squad_deaths`, for your own achievements.
+- **`@victims`** setting ([#21](https://github.com/LucasSKrewer/kenshi-achievements/issues/21), requested
+  by @az455862): how many races and factions "Most frequent victims" lists. `5` by default, any number,
+  or `all` for the complete list (one per line).
 
 ## [1.2.0] — 2026-10-07
 

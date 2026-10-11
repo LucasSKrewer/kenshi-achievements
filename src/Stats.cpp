@@ -664,17 +664,36 @@ namespace Stats
 			return name;
 		}
 
-		// "A 40, B 35, C 21" com os `n` maiores.
-		std::string topOf(const std::map<std::string, int>& m, size_t n)
+		// Quantas vítimas listar (#21): @victims = 5 (padrão), outro número, ou "all" = todas (0).
+		size_t victimsLimit()
+		{
+			std::string v = setting("victims", "5");
+			if (v == "all" || v == "todas" || v == "tudo")
+				return 0;
+			int n = atoi(v.c_str());
+			return n > 0 ? (size_t)n : 5;
+		}
+
+		// Os `n` maiores (0 = todos). Até 5 cabem numa linha ("A 40, B 35, C 21"); acima disso,
+		// um por linha, senão vira um parágrafo ilegível.
+		void writeTop(std::ostringstream& o, const std::string& label, const std::map<std::string, int>& m, size_t n)
 		{
 			std::vector<std::pair<int, std::string> > v;
 			for (std::map<std::string, int>::const_iterator it = m.begin(); it != m.end(); ++it)
 				v.push_back(std::make_pair(it->second, it->first));
 			std::sort(v.begin(), v.end(), byCountDesc);
-			std::ostringstream o;
-			for (size_t i = 0; i < v.size() && i < n; ++i)
-				o << (i ? ", " : "") << v[i].second << " " << v[i].first;
-			return o.str();
+			size_t count = (n == 0 || n > v.size()) ? v.size() : n;
+			if (count <= 5)
+			{
+				o << "   " << label << " ";
+				for (size_t i = 0; i < count; ++i)
+					o << (i ? ", " : "") << v[i].second << " " << v[i].first;
+				o << "\n";
+				return;
+			}
+			o << "   " << label << "\n";
+			for (size_t i = 0; i < count; ++i)
+				o << "      " << v[i].second << "  " << v[i].first << "\n";
 		}
 	}
 
@@ -728,10 +747,11 @@ namespace Stats
 		if (!killsByRace.empty() || !killsByFaction.empty())
 		{
 			o << "\n" << Lang::tr("stats.victims", "--- Most frequent victims ---") << "\n";
+			size_t limit = victimsLimit();
 			if (!killsByRace.empty())
-				o << "   " << Lang::tr("stats.victims_race", "Races:") << " " << topOf(killsByRace, 5) << "\n";
+				writeTop(o, Lang::tr("stats.victims_race", "Races:"), killsByRace, limit);
 			if (!killsByFaction.empty())
-				o << "   " << Lang::tr("stats.victims_faction", "Factions:") << " " << topOf(killsByFaction, 5) << "\n";
+				writeTop(o, Lang::tr("stats.victims_faction", "Factions:"), killsByFaction, limit);
 		}
 		return o.str();
 	}

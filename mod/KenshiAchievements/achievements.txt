@@ -39,6 +39,11 @@
 # Avoid keys Kenshi already uses: F1-F5, F7-F9 (F9 = quickload), I, M, C, T, B, Y, R...
 @key = F6
 
+# "Most frequent victims" in the Statistics tab: how many races and factions to list.
+#   @victims = 5    -> top 5 (default)        @victims = 20  -> top 20
+#   @victims = all  -> every race and faction your squad has killed
+@victims = 5
+
 # Diagnostics: 1 logs every kill/KO/hit to RE_Kenshi_log.txt (keep 0 for normal play).
 @debug = 0
 

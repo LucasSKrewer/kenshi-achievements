@@ -697,7 +697,31 @@ namespace Stats
 		}
 	}
 
-	std::string statsReport(const std::string& selectedKey, const std::string& selectedName)
+	std::vector<CharRow> characterRows()
+	{
+		// Com a chave junto, pra desambiguar homônimos
+		std::vector<std::pair<CharStats, std::string> > list;
+		for (std::map<std::string, CharStats>::const_iterator it = chars.begin(); it != chars.end(); ++it)
+			list.push_back(std::make_pair(it->second, it->first));
+		std::sort(list.begin(), list.end(), byKillsDescPair);
+
+		std::vector<CharRow> rows;
+		for (size_t i = 0; i < list.size(); ++i)
+		{
+			const CharStats& c = list[i].first;
+			CharRow r;
+			r.name = displayName(list[i].second, c.name, c.race)
+				+ (isFallen(list[i].second) ? " " + Lang::tr("stats.fallen", "(fallen)") : "");
+			r.kills = c.kills;
+			r.kos = c.kos;
+			r.stealthKos = c.stealthKos;
+			r.limbs = c.limbs;
+			rows.push_back(r);
+		}
+		return rows;
+	}
+
+	std::string statsReport(const std::string& selectedKey, const std::string& selectedName, bool withCharacterList)
 	{
 		std::ostringstream o;
 		if (selectedName.empty())
@@ -727,21 +751,20 @@ namespace Stats
 		if (!fallen.empty())
 			o << "   " << Lang::fill(Lang::tr("stats.deaths", "Squad losses: {n}"), "n", (int)fallen.size()) << "\n";
 
-		// Lista com a chave junto, pra desambiguar homônimos
-		std::vector<std::pair<CharStats, std::string> > list;
-		for (std::map<std::string, CharStats>::const_iterator it = chars.begin(); it != chars.end(); ++it)
-			list.push_back(std::make_pair(it->second, it->first));
-		std::sort(list.begin(), list.end(), byKillsDescPair);
-
-		o << "\n" << Lang::tr("stats.per_char", "--- Per character ---") << "\n";
-		if (list.empty())
-			o << Lang::tr("stats.none", "(nobody yet)") << "\n";
-		for (size_t i = 0; i < list.size(); ++i)
+		if (withCharacterList)
 		{
-			const CharStats& c = list[i].first;
-			o << displayName(list[i].second, c.name, c.race)
-				<< (isFallen(list[i].second) ? " " + Lang::tr("stats.fallen", "(fallen)") : "")
-				<< ":  " << statLine(c) << "\n";
+			std::vector<CharRow> rows = characterRows();
+			o << "\n" << Lang::tr("stats.per_char", "--- Per character ---") << "\n";
+			if (rows.empty())
+				o << Lang::tr("stats.none", "(nobody yet)") << "\n";
+			for (size_t i = 0; i < rows.size(); ++i)
+			{
+				CharStats c;
+				c.kills = rows[i].kills;
+				c.kos = rows[i].kos;
+				c.limbs = rows[i].limbs;
+				o << rows[i].name << ":  " << statLine(c) << "\n";
+			}
 		}
 
 		if (!killsByRace.empty() || !killsByFaction.empty())

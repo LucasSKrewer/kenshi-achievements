@@ -37,6 +37,7 @@
 
 #include <mygui/MyGUI_Button.h>
 #include <mygui/MyGUI_EditBox.h>
+#include <mygui/MyGUI_MultiListBox.h>
 #include <mygui/MyGUI_Gui.h>
 #include <mygui/MyGUI_InputManager.h>
 #include <mygui/MyGUI_TextBox.h>
@@ -64,7 +65,7 @@ namespace
 
 	const DWORD HIT_MEMORY_MS = 30000;  // quanto tempo um golpe do jogador vale para autoria
 	const DWORD TOAST_MS = 6000;
-	const char* const VERSION = "1.3.0";
+	const char* const VERSION = "1.4.0";
 	double gameClock = 0.0; // segundos de jogo (ver tickGameClock)
 	const DWORD LIMB_HIT_MS = 2000; // membro decepado só conta com golpe do grupo nesse intervalo (#19)
 	int panelKey = VK_F6; // @tecla no achievements.txt. F9 é o quickload do Kenshi, F5 o quicksave.
@@ -715,6 +716,10 @@ namespace
 	MyGUI::Button* tabStats = NULL;
 	MyGUI::Button* tabAchievements = NULL;
 	MyGUI::Button* tabMemorial = NULL;
+	// Tabela por personagem na aba Estatísticas (#22): a fonte do Kenshi não é monoespaçada, então
+	// alinhar com espaços não funciona; é a mesma tabela das telas de salvar/carregar.
+	MyGUI::MultiListBox* charTable = NULL;
+	std::string tableSignature; // só refaz as linhas quando mudam (refazer perde a ordenação escolhida)
 	int currentTab = 0; // 0 = estatísticas, 1 = conquistas, 2 = memorial (lembrado entre aberturas)
 	std::string panelLastText; // só reescreve o texto quando muda (setCaption volta a rolagem pro topo)
 	bool panelCloseRequested = false;
@@ -727,6 +732,54 @@ namespace
 			panelCloseRequested = true;
 	}
 
+	// Estatísticas: texto em cima e tabela embaixo. Conquistas/Memorial: só o texto, na altura toda.
+	void layoutForTab()
+	{
+		if (!panelText)
+			return;
+		bool stats = currentTab == 0 && charTable;
+		if (charTable)
+			charTable->setVisible(currentTab == 0);
+		panelText->setRealCoord(0.02f, 0.10f, 0.96f, stats ? 0.36f : 0.88f);
+		panelLastText.clear();
+		tableSignature.clear();
+	}
+
+	// Clique no cabeçalho ordena; nas colunas de número, por valor ("100" depois de "20").
+	void tableLess(MyGUI::MultiListBox* sender, size_t column, const MyGUI::UString& a, const MyGUI::UString& b, bool& less)
+	{
+		if (column == 0)
+			less = a.asUTF8() < b.asUTF8();
+		else
+			less = atoi(a.asUTF8_c_str()) < atoi(b.asUTF8_c_str());
+	}
+
+	std::string itos(int v)
+	{
+		std::ostringstream o;
+		o << v;
+		return o.str();
+	}
+
+	void fillTable(const std::vector<Stats::CharRow>& rows)
+	{
+		std::ostringstream sig;
+		for (size_t i = 0; i < rows.size(); ++i)
+			sig << rows[i].name << '|' << rows[i].kills << '|' << rows[i].kos << '|' << rows[i].stealthKos << '|' << rows[i].limbs << '\n';
+		if (sig.str() == tableSignature)
+			return;
+		tableSignature = sig.str();
+		charTable->removeAllItems();
+		for (size_t i = 0; i < rows.size(); ++i)
+		{
+			charTable->addItem(rows[i].name);
+			charTable->setSubItemNameAt(1, i, itos(rows[i].kills));
+			charTable->setSubItemNameAt(2, i, itos(rows[i].kos));
+			charTable->setSubItemNameAt(3, i, itos(rows[i].stealthKos));
+			charTable->setSubItemNameAt(4, i, itos(rows[i].limbs));
+		}
+	}
+
 	void selectTab(int tab)
 	{
 		currentTab = tab;
@@ -736,6 +789,7 @@ namespace
 			tabAchievements->setStateSelected(tab == 1);
 		if (tabMemorial)
 			tabMemorial->setStateSelected(tab == 2);
+		layoutForTab();
 		panelRefreshedAt = 0; // força refresh no próximo frame
 	}
 
@@ -765,7 +819,7 @@ namespace
 			selName = sel->getName();
 		}
 		boost::lock_guard<boost::mutex> g(lock);
-		return Stats::statsReport(selKey, selName);
+		return Stats::statsReport(selKey, selName, charTable == NULL); // com tabela, a lista sai do texto
 	}
 	bool keyWasDown = false;
 
@@ -858,6 +912,7 @@ namespace
 			tabStats = NULL;
 			tabAchievements = NULL;
 			tabMemorial = NULL;
+			charTable = NULL;
 			return;
 		}
 		panel = gui->createWidgetReal<MyGUI::Window>("Kenshi_WindowCX", 0.30f, 0.15f, 0.40f, 0.65f,
@@ -892,6 +947,19 @@ namespace
 		// A EditBox do MyGUI corta em 2048 caracteres por padrão; com 41 conquistas a aba já passa disso
 		panelText->setMaxTextLength(1000000);
 		panelLastText.clear();
+
+		charTable = client->createWidgetReal<MyGUI::MultiListBox>("Kenshi_MultiListBox", 0.02f, 0.47f, 0.96f, 0.51f,
+			MyGUI::Align::Stretch);
+		int width = charTable->getWidth() - 30; // desconta a barra de rolagem
+		int number = width * 13 / 100;
+		charTable->addColumn(Lang::tr("table.name", "Character"), width - 4 * number);
+		charTable->addColumn(Lang::tr("table.kills", "Kills"), number);
+		charTable->addColumn(Lang::tr("table.kos", "KOs"), number);
+		charTable->addColumn(Lang::tr("table.stealth", "Stealth"), number);
+		charTable->addColumn(Lang::tr("table.limbs", "Limbs"), number);
+		charTable->requestOperatorLess = MyGUI::newDelegate(tableLess);
+		tableSignature.clear();
+
 		panel->eventWindowButtonPressed += MyGUI::newDelegate(onPanelButton);
 		selectTab(currentTab);
 	}
@@ -1043,6 +1111,15 @@ namespace
 			{
 				panelText->setCaption(text);
 				panelLastText = text;
+			}
+			if (charTable && currentTab == 0)
+			{
+				std::vector<Stats::CharRow> rows;
+				{
+					boost::lock_guard<boost::mutex> g(lock);
+					rows = Stats::characterRows();
+				}
+				fillTable(rows);
 			}
 			panelRefreshedAt = GetTickCount();
 		}

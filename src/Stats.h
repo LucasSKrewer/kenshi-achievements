@@ -107,8 +107,20 @@ namespace Stats
 	void importFrom(const std::map<std::string, int>& ints, const std::map<std::string, std::string>& strs);
 
 	// Aba "Estatísticas": personagem selecionado (key/name vazios = nenhum), total do grupo, lista por
-	// personagem e vítimas mais frequentes.
-	std::string statsReport(const std::string& selectedKey, const std::string& selectedName);
+	// personagem e vítimas mais frequentes. withCharacterList = false quando o painel mostra a lista
+	// numa tabela (#22).
+	std::string statsReport(const std::string& selectedKey, const std::string& selectedName,
+		bool withCharacterList = true);
+
+	// Uma linha da tabela por personagem (#22): nome já pronto pra exibir (raça entre parênteses se houver
+	// homônimo, marca de morto), ordenado por kills.
+	struct CharRow
+	{
+		std::string name;
+		int kills, kos, stealthKos, limbs;
+		CharRow() : kills(0), kos(0), stealthKos(0), limbs(0) {}
+	};
+	std::vector<CharRow> characterRows();
 
 	// Aba "Conquistas": por categoria, concluídas e pendentes com progresso.
 	std::string achievementsReport();

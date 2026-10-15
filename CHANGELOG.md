@@ -2,6 +2,13 @@
 
 All notable changes to Kenshi Achievements. Versions follow [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Changed
+- **Per-character table** in the Statistics tab ([#22](https://github.com/LucasSKrewer/kenshi-achievements/issues/22),
+  suggested by @az455862): the list is now a real table (the same widget as the save/load screens) with
+  aligned columns for kills, KOs, stealth KOs and limbs. Click a column header to sort by it.
+
 ## [1.3.0] — 2026-10-11
 
 ### Added

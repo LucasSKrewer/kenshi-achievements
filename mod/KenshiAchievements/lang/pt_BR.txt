@@ -17,6 +17,12 @@ stats.victims_faction = Facções:
 stats.deaths = Baixas do grupo: {n}
 stats.fallen = (morto)
 
+table.name = Personagem
+table.kills = Kills
+table.kos = KOs
+table.stealth = Furtivos
+table.limbs = Membros
+
 mem.none = (ninguém caiu)
 mem.by = Morto por {killer}
 mem.unknown = Causa da morte desconhecida

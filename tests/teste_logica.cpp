@@ -313,6 +313,30 @@ int main(int argc, char** argv)
 	printf("\n===== aba Estatísticas =====\n%s", painel.c_str());
 	printf("===== aba Conquistas =====\n%s", Stats::achievementsReport().c_str());
 
+	// #22: linhas da tabela por personagem e texto sem a lista
+	{
+		Stats::reset();
+		Stats::recordKill("hA", "The Arbiter", "Skeleton Screamer MKII", "Shek", "Dust Bandits");
+		Stats::recordKill("hA", "The Arbiter", "Skeleton Screamer MKII", "Shek", "Dust Bandits");
+		Stats::recordKill("hB", "The Arbiter", "Skeleton MKI", "Shek", "Dust Bandits");
+		Stats::Takedown t;
+		t.key = "hC"; t.name = "Fuu"; t.charRace = "Greenlander"; t.race = "Shek"; t.faction = "Dust Bandits"; t.stealth = true;
+		Stats::recordKO(t);
+		Stats::recordLimb("hC", "Fuu", "Greenlander");
+		Stats::recordSquadDeath("hB", "The Arbiter", "Skeleton MKI", "Sabre", "Red Sabres", 3);
+		Stats::popUnlocks();
+		std::vector<Stats::CharRow> rows = Stats::characterRows();
+		check(rows.size() == 3, "3 linhas na tabela");
+		check(rows[0].name == "The Arbiter (Skeleton Screamer MKII)" && rows[0].kills == 2, "1ª linha: mais kills, homônimo com raça");
+		check(rows[1].name == "The Arbiter (Skeleton MKI) (morto)" && rows[1].kills == 1, "2ª linha: morto marcado");
+		check(rows[2].name == "Fuu" && rows[2].kos == 1 && rows[2].stealthKos == 1 && rows[2].limbs == 1, "3ª linha: KO furtivo e membro");
+		std::string semLista = Stats::statsReport("hC", "Fuu", false);
+		check(semLista.find("--- Por personagem ---") == std::string::npos && semLista.find("--- Total do grupo ---") != std::string::npos,
+			"texto sem a lista quando há tabela");
+		check(Stats::statsReport("hC", "Fuu").find("--- Por personagem ---") != std::string::npos, "sem tabela, a lista continua no texto");
+		Stats::reset();
+	}
+
 	// #21: @victims controla quantas vítimas listar; "all" mostra todas, uma por linha
 	{
 		Stats::reset();

@@ -22,6 +22,12 @@ stats.victims_faction = Factions:
 stats.deaths = Squad losses: {n}
 stats.fallen = (fallen)
 
+table.name = Character
+table.kills = Kills
+table.kos = KOs
+table.stealth = Stealth
+table.limbs = Limbs
+
 mem.none = (nobody has fallen)
 mem.by = Killed by {killer}
 mem.unknown = Cause of death unknown

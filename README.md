@@ -17,7 +17,7 @@ feitos pelo seu grupo e libera **conquistas** configuráveis. Só single-player.
 - Os contadores ficam **dentro do save** (um `GameData` próprio, tipo `4242`); cada save tem os seus.
 - Conquista liberada → janela no topo da tela + linha no log de mensagens + som.
 - **F6** abre/fecha o painel (tecla configurável com `@key`), com três abas:
-  - **Estatísticas** — o personagem selecionado no topo, depois o total do grupo, a lista por personagem e as vítimas mais frequentes;
+  - **Estatísticas** — o personagem selecionado, o total do grupo e as vítimas mais frequentes em cima, e uma **tabela por personagem** (Kills, KOs, Furtivos, Membros) embaixo, ordenável clicando no cabeçalho;
   - **Conquistas** — por categoria, concluídas e em andamento, com progresso (ex.: `(3/10)`);
   - **Memorial** — quem do grupo morreu, quem matou, em que dia e o que tinha feito.
 - Conquistas em `mod/KenshiAchievements/achievements.txt` — formato explicado no próprio arquivo.

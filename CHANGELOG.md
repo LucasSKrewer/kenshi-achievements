@@ -9,6 +9,12 @@ All notable changes to Kenshi Achievements. Versions follow [Semantic Versioning
   suggested by @az455862): the list is now a real table (the same widget as the save/load screens) with
   aligned columns for kills, KOs, stealth KOs and limbs. Click a column header to sort by it.
 
+### Fixed
+- The same character could show up twice in the list: moving a character to another squad changes the
+  game's handle for it, and the mod started a new entry. Entries whose handle no longer points to a living
+  squad member are now merged into the current one with the same name and race (fixes existing saves
+  too). Real namesakes and fallen characters stay separate.
+
 ## [1.3.0] — 2026-10-11
 
 ### Added

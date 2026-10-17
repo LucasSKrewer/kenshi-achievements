@@ -697,6 +697,44 @@ namespace Stats
 		}
 	}
 
+	std::vector<CharKey> characterKeys()
+	{
+		std::vector<CharKey> out;
+		for (std::map<std::string, CharStats>::const_iterator it = chars.begin(); it != chars.end(); ++it)
+		{
+			CharKey k;
+			k.key = it->first;
+			k.name = it->second.name;
+			k.race = it->second.race;
+			k.fallen = isFallen(it->first);
+			out.push_back(k);
+		}
+		return out;
+	}
+
+	void mergeCharacter(const std::string& from, const std::string& to)
+	{
+		if (from == to)
+			return;
+		std::map<std::string, CharStats>::iterator f = chars.find(from);
+		if (f == chars.end())
+			return;
+		CharStats moved = f->second;
+		chars.erase(f);
+		CharStats& t = chars[to];
+		if (t.name.empty())
+			t.name = moved.name;
+		if (t.race.empty())
+			t.race = moved.race;
+		t.kills += moved.kills;
+		t.kos += moved.kos;
+		t.stealthKos += moved.stealthKos;
+		t.limbs += moved.limbs;
+		for (size_t i = 0; i < fallen.size(); ++i)
+			if (fallen[i].key == from)
+				fallen[i].key = to;
+	}
+
 	std::vector<CharRow> characterRows()
 	{
 		// Com a chave junto, pra desambiguar homônimos

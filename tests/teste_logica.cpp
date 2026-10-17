@@ -337,6 +337,28 @@ int main(int argc, char** argv)
 		Stats::reset();
 	}
 
+	// #22: mesmo personagem com handle novo (trocou de esquadrão) é juntado; mortos guardam a chave nova
+	{
+		Stats::reset();
+		Stats::recordKill("velho", "Brooke", "White Direwolf", "Shek", "Dust Bandits");
+		Stats::recordKill("velho", "Brooke", "White Direwolf", "Shek", "Dust Bandits");
+		Stats::recordKO("novo", "Brooke", "White Direwolf", "Shek", "Dust Bandits");
+		Stats::recordLimb("novo", "Brooke", "White Direwolf");
+		Stats::popUnlocks();
+		std::vector<Stats::CharKey> keys = Stats::characterKeys();
+		check(keys.size() == 2, "antes: duas entradas da Brooke");
+		Stats::mergeCharacter("velho", "novo");
+		std::vector<Stats::CharRow> rows = Stats::characterRows();
+		check(rows.size() == 1 && rows[0].name == "Brooke" && rows[0].kills == 2 && rows[0].kos == 1 && rows[0].limbs == 1,
+			"depois: uma linha só, somada (2 kills, 1 KO, 1 membro), sem raça no nome");
+		Stats::recordSquadDeath("novo", "Brooke", "White Direwolf", "Sabre", "Red Sabres", 5);
+		Stats::mergeCharacter("novo", "outro");
+		check(Stats::characterKeys()[0].fallen && Stats::characterKeys()[0].key == "outro", "baixa acompanha a chave nova");
+		Stats::mergeCharacter("nao_existe", "outro");
+		check(Stats::characterRows().size() == 1, "juntar chave inexistente não faz nada");
+		Stats::reset();
+	}
+
 	// #21: @victims controla quantas vítimas listar; "all" mostra todas, uma por linha
 	{
 		Stats::reset();

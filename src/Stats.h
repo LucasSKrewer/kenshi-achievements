@@ -122,6 +122,19 @@ namespace Stats
 	};
 	std::vector<CharRow> characterRows();
 
+	// Entradas por personagem, pra o plugin conferir no jogo se o handle ainda vale (#22): o handle muda
+	// quando o personagem troca de esquadrão, e o mesmo personagem aparecia duas vezes na tabela.
+	struct CharKey
+	{
+		std::string key, name, race;
+		bool fallen;
+		CharKey() : fallen(false) {}
+	};
+	std::vector<CharKey> characterKeys();
+
+	// Soma as contagens de `from` em `to` (o mesmo personagem com handle novo) e apaga `from`.
+	void mergeCharacter(const std::string& from, const std::string& to);
+
 	// Aba "Conquistas": por categoria, concluídas e pendentes com progresso.
 	std::string achievementsReport();
 

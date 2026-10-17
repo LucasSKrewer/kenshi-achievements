@@ -68,6 +68,7 @@ namespace
 	const char* const VERSION = "1.4.0";
 	double gameClock = 0.0; // segundos de jogo (ver tickGameClock)
 	DWORD lastReconcile = 0; // ver reconcileCharacters
+	bool reconciledOnce = false;
 	const DWORD LIMB_HIT_MS = 2000; // membro decepado só conta com golpe do grupo nesse intervalo (#19)
 	int panelKey = VK_F6; // @tecla no achievements.txt. F9 é o quickload do Kenshi, F5 o quicksave.
 
@@ -553,6 +554,7 @@ namespace
 		downNow.clear();
 		lastHitOnSquad.clear();
 		lastReconcile = 0; // confere logo depois de carregar
+		reconciledOnce = false;
 	}
 
 	// ---------- hooks de combate ----------
@@ -1065,7 +1067,14 @@ namespace
 		}
 
 		boost::lock_guard<boost::mutex> g(lock);
+		bool firstRun = !reconciledOnce;
+		reconciledOnce = true;
 		std::vector<Stats::CharKey> keys = Stats::characterKeys();
+		std::map<std::string, int> nameCount;
+		for (size_t i = 0; i < keys.size(); ++i)
+			++nameCount[keys[i].name];
+
+		int live = 0, stale = 0, merged = 0, orphan = 0;
 		for (size_t i = 0; i < keys.size(); ++i)
 		{
 			const Stats::CharKey& k = keys[i];
@@ -1074,19 +1083,43 @@ namespace
 			hand h;
 			h.fromString(k.key);
 			Character* current = h.getCharacter();
+			std::string to;
 			if (current && current->isPlayerCharacter() && current->getName() == k.name)
-				continue; // handle ainda vale
-			// Entradas antigas sem raça casam só pelo nome
-			std::map<std::string, std::vector<Character*> >::iterator m =
-				k.race.empty() ? byName.find(k.name) : byNameRace.find(k.name + "|" + k.race);
-			std::map<std::string, std::vector<Character*> >& source = k.race.empty() ? byName : byNameRace;
-			if (m == source.end() || m->second.size() != 1)
-				continue; // ninguém (dispensado?) ou mais de um candidato: não dá pra saber
-			std::string to = charKey(m->second[0]);
+			{
+				// O handle antigo ainda acha o personagem, mas o texto do handle atual é outro (trocou de
+				// esquadrão): as duas entradas são da mesma pessoa e vão pro handle atual.
+				++live;
+				to = charKey(current);
+			}
+			else
+			{
+				++stale;
+				// Entradas antigas sem raça casam só pelo nome
+				std::map<std::string, std::vector<Character*> >& source = k.race.empty() ? byName : byNameRace;
+				std::map<std::string, std::vector<Character*> >::iterator m =
+					source.find(k.race.empty() ? k.name : k.name + "|" + k.race);
+				if (m == source.end() || m->second.size() != 1)
+				{
+					++orphan; // ninguém (dispensado?) ou mais de um candidato: não dá pra saber
+					continue;
+				}
+				to = charKey(m->second[0]);
+			}
+			if (firstRun && nameCount[k.name] > 1)
+				DebugLog("KenshiAchievements: conferindo '" + k.name + "' " + k.key + " -> " + to
+					+ (current ? " (handle ainda acha o personagem)" : " (handle não acha mais ninguém)"));
 			if (to == k.key)
 				continue;
 			DebugLog("KenshiAchievements: '" + k.name + "' mudou de handle (" + k.key + " -> " + to + "), contagens juntadas");
 			Stats::mergeCharacter(k.key, to);
+			++merged;
+		}
+		if (firstRun || merged)
+		{
+			std::ostringstream o;
+			o << "KenshiAchievements: conferência de personagens: " << keys.size() << " entradas, " << live
+				<< " com handle válido, " << stale << " sem, " << merged << " juntadas, " << orphan << " sem dono no grupo";
+			DebugLog(o.str());
 		}
 	}
 

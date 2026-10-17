@@ -11,9 +11,10 @@ All notable changes to Kenshi Achievements. Versions follow [Semantic Versioning
 
 ### Fixed
 - The same character could show up twice in the list: moving a character to another squad changes the
-  game's handle for it, and the mod started a new entry. Entries whose handle no longer points to a living
-  squad member are now merged into the current one with the same name and race (fixes existing saves
-  too). Real namesakes and fallen characters stay separate.
+  game's handle for it, and the mod started a new entry. The old handle still finds the character, so every
+  entry is now merged into that character's current handle; entries whose handle finds nobody go to the only
+  living squad member with the same name and race, if there is one. Fixes existing saves too. Real
+  namesakes and fallen characters stay separate.
 
 ## [1.3.0] — 2026-10-11
 

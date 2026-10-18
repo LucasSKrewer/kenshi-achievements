@@ -2,6 +2,14 @@
 
 All notable changes to Kenshi Achievements. Versions follow [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Fixed
+- The text in the F6 panel jumped to the end every time it was refreshed, so the top of the Statistics tab
+  (selected character, squad total) was scrolled out of view when opening the panel, especially with
+  `@victims = all` ([#23](https://github.com/LucasSKrewer/kenshi-achievements/issues/23), reported by
+  @az455862). It now opens at the top, and keeps your scroll position while it updates.
+
 ## [1.4.0] — 2026-10-17
 
 ### Changed

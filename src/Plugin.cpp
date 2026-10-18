@@ -65,7 +65,7 @@ namespace
 
 	const DWORD HIT_MEMORY_MS = 30000;  // quanto tempo um golpe do jogador vale para autoria
 	const DWORD TOAST_MS = 6000;
-	const char* const VERSION = "1.4.0";
+	const char* const VERSION = "1.4.1";
 	double gameClock = 0.0; // segundos de jogo (ver tickGameClock)
 	DWORD lastReconcile = 0; // ver reconcileCharacters
 	bool reconciledOnce = false;
@@ -1194,7 +1194,12 @@ namespace
 			std::string text = buildReport();
 			if (text != panelLastText)
 			{
+				// setCaption põe o cursor no fim e a caixa rola junto (#23). Ao abrir/trocar de aba
+				// (panelLastText vazio) começa no topo; nas atualizações mantém onde o jogador deixou.
+				size_t scroll = panelLastText.empty() ? 0 : panelText->getVScrollPosition();
 				panelText->setCaption(text);
+				panelText->setTextCursor(0);
+				panelText->setVScrollPosition((std::min)(scroll, panelText->getVScrollRange()));
 				panelLastText = text;
 			}
 			if (charTable && currentTab == 0)

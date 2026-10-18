@@ -20,7 +20,7 @@ $modDir = Join-Path $root "mod\KenshiAchievements"
 $cl   = Join-Path $VcDir "bin\amd64\cl.exe"
 $link = Join-Path $VcDir "bin\amd64\link.exe"
 foreach ($f in @($cl, $link, "$klib\Libraries\KenshiLib.lib", "$boost\boost\version.hpp")) {
-    if (-not (Test-Path $f)) { throw "Não encontrado: $f (ver README.md > Compilar)" }
+    if (-not (Test-Path $f)) { throw "Não encontrado: $f (ver README.md > Building / README.pt-BR.md > Compilar)" }
 }
 
 # O cl de 2010 acha as DLLs dele (c1.dll, mspdb100.dll...) pelo PATH

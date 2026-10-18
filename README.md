@@ -1,139 +1,202 @@
 # Kenshi Achievements
 
-> **EN:** An [RE_Kenshi](https://github.com/BFrizzleFoShizzle/RE_Kenshi) plugin that tracks **kills** and
-> **knockouts** per squad member and unlocks configurable **achievements** (popup + sound, F6 panel with
-> Statistics / Achievements tabs). Stats are stored inside your save. Single-player.
-> **Works in any game language**: the UI follows Kenshi's language (`lang/<language>.txt`, English fallback —
-> translations welcome!) and translated race/faction names are mapped back to English using the game's own
-> dictionary, so `achievements.txt` is the same for everyone. Docs below are in Portuguese.
+**English** · [Português (Brasil)](README.pt-BR.md)
 
-Plugin [RE_Kenshi](https://github.com/BFrizzleFoShizzle/RE_Kenshi) que conta **kills** e **KOs**
-feitos pelo seu grupo e libera **conquistas** configuráveis. Só single-player.
+An [RE_Kenshi](https://github.com/BFrizzleFoShizzle/RE_Kenshi) plugin that counts the **kills** and
+**knockouts** made by your squad and unlocks configurable **achievements**. Single-player only.
 
-⭐ **Gostou? Deixa uma estrela no repositório** — é o único pedido. Fork à vontade.
+**[Steam Workshop](https://steamcommunity.com/sharedfiles/filedetails/?id=3809336824)** ·
+**[Download (GitHub releases)](https://github.com/LucasSKrewer/kenshi-achievements/releases/latest)** ·
+[Changelog](CHANGELOG.md) · [Issues](https://github.com/LucasSKrewer/kenshi-achievements/issues)
 
-- Contagem por personagem, por raça e por facção da vítima: mortes, KOs (os furtivos à parte) e membros decepados.
-- 68 conquistas: marcos de kills/KOs, sequências ("5 kills em um minuto"), facções e criaturas, chefes (NPCs únicos) e conteúdo do Genesis. As de conteúdo que você não tem ficam ocultas.
-- Os contadores ficam **dentro do save** (um `GameData` próprio, tipo `4242`); cada save tem os seus.
-- Conquista liberada → janela no topo da tela + linha no log de mensagens + som.
-- **F6** abre/fecha o painel (tecla configurável com `@key`), com três abas:
-  - **Estatísticas** — o personagem selecionado, o total do grupo e as vítimas mais frequentes em cima, e uma **tabela por personagem** (Kills, KOs, Furtivos, Membros) embaixo, ordenável clicando no cabeçalho;
-  - **Conquistas** — por categoria, concluídas e em andamento, com progresso (ex.: `(3/10)`);
-  - **Memorial** — quem do grupo morreu, quem matou, em que dia e o que tinha feito.
-- Conquistas em `mod/KenshiAchievements/achievements.txt` — formato explicado no próprio arquivo.
-- Som configurável (`@sound`): padrão é a notificação "construção concluída" do próprio Kenshi; dá pra usar outro som do jogo, o `achievement.wav` incluso ou qualquer `.wav` seu.
+⭐ **Like it? Star the repository.** That's all I ask. Forks are welcome.
 
-### Idiomas
+## Features
 
-O mod segue o idioma escolhido no Kenshi (`language=` no `settings.cfg`):
+- Counts per character and by the victim's race and faction: kills, knockouts (stealth knockouts
+  counted separately) and severed limbs.
+- **68 achievements** across these groups:
+  - kill and KO milestones;
+  - streaks ("5 kills within a minute");
+  - factions and creatures;
+  - bosses and unique NPCs;
+  - Genesis content.
+  
+  Achievements for content you don't have installed are hidden.
+- When an achievement unlocks you get a popup at the top of the screen, a line in the message log and
+  a sound.
+- **F6** opens and closes the panel (change the key with `@key`). It has three tabs:
+  - **Statistics**: the selected character, the squad total and the most frequent victims at the top,
+    and a **per-character table** (Kills, KOs, Stealth, Limbs) below it. Click a column header to sort.
+  - **Achievements**: grouped by category, done and in progress, with progress like `(3/10)`.
+  - **Memorial**: the squad members who died, who killed them, on which day, and what they had done.
+- The counters live **inside your save** (in a `GameData` record of the mod's own type, `4242`), so
+  every save has its own. Saves from before the mod load fine, and counting starts from then on.
+- **Everything is configurable** in `achievements.txt`, without recompiling (see
+  [Customizing](#customizing)).
 
-- **Textos do mod** vêm de `lang/<idioma>.txt` (ex.: `pt_BR.txt`, `de_DE.txt`), por cima do `lang/en.txt`.
-  Pra traduzir, copie o `en.txt` com o código do idioma e traduza — o que faltar fica em inglês. PRs são bem-vindos.
-- **Nomes de raça/facção** chegam traduzidos do jogo ("Bandidos da Poeira"); o mod usa o dicionário do próprio
-  Kenshi (`locale/<idioma>/gamedata.po`) pra voltar ao inglês ("Dust Bandits"). Por isso o `achievements.txt`
-  usa sempre os nomes em inglês e vale pra qualquer idioma. Dá pra listar alternativas com vírgula.
+## Installing
 
-## Instalar (jogador)
+Requires **[RE_Kenshi](https://github.com/BFrizzleFoShizzle/RE_Kenshi/releases) v0.3.5 or newer**.
+The main menu shows "RE_Kenshi v0.3.5" when it's installed.
 
-**Steam:** assine na [Steam Workshop](https://steamcommunity.com/sharedfiles/filedetails/?id=3809336824) e siga os passos 1 e 3 abaixo.
+**Steam:** subscribe on the [Steam Workshop](https://steamcommunity.com/sharedfiles/filedetails/?id=3809336824)
+and enable **KenshiAchievements** in the Kenshi launcher.
 
-**Manual (GOG etc.):** baixe o zip em [Releases](https://github.com/LucasSKrewer/kenshi-achievements/releases/latest).
+**Manual (GOG etc.):**
+1. Download the zip from [Releases](https://github.com/LucasSKrewer/kenshi-achievements/releases/latest).
+2. Copy the `KenshiAchievements` folder into `Kenshi\mods\`.
+3. Enable **KenshiAchievements** in the Kenshi launcher.
 
-1. Tenha o [RE_Kenshi](https://github.com/BFrizzleFoShizzle/RE_Kenshi/releases) **v0.3.5+** instalado
-   (o menu principal mostra "RE_Kenshi v0.3.5").
-2. Copie a pasta `KenshiAchievements` para `Kenshi\mods\`.
-3. Ative **KenshiAchievements** no launcher do Kenshi.
+**Upgrading:** replace the folder. Your progress is stored in your saves and is kept.
 
-## Como a autoria é decidida
+**Removing the mod is safe:** saves load normally without it. A save made *while the mod is disabled*
+loses the counters, because Kenshi drops records it doesn't know when saving. Older saves keep theirs.
 
-Quando alguém morre (`Character::declareDead`) ou cai inconsciente (`MedicalSystem::knockout`):
+Load order doesn't matter: the mod doesn't change any game data. It works with Genesis and typical
+Workshop mod lists. It isn't designed for multiplayer mods.
 
-1. quem do grupo está executando nocaute/assassinato furtivo com a vítima como alvo (o golpe furtivo não fere);
-2. `vítima->lastGuyWhoDefeatedMe`, se for personagem do jogador;
-3. senão, o último personagem do jogador que feriu a vítima (`MedicalSystem::addWound`, melee ou projétil) nos últimos 30 s.
+## Customizing
 
-KO sem atacante na hora fica pendente por até 3 s (o jogo costuma preencher o atacante logo depois).
+Everything lives in `mods/KenshiAchievements/achievements.txt`, which the game reads at startup. The
+format is explained at the top of the file:
 
-Vítimas do próprio grupo não contam. Uma morte conta uma vez só por vítima; um KO conta na chamada de
-`knockout()` com a vítima de pé (o jogo só marca "inconsciente" depois), com intervalo mínimo de 10 s
-por vítima — a mesma pessoa pode ser nocauteada de novo depois.
+```
+id | metric | target | title | description
+```
 
-`@debug = 1` no `achievements.txt` registra cada kill/KO/golpe no `RE_Kenshi_log.txt`.
+| Metric | Counts |
+|---|---|
+| `kills`, `kos`, `takedowns` | whole squad (takedowns = kills + KOs) |
+| `limbs`, `stealth_kos`, `squad_deaths` | limbs severed, stealth knockouts, squad members lost |
+| `char_kills`, `char_kos`, `char_limbs`, `char_stealth_kos` | best single character |
+| `race_kills:<Race>`, `race_kos:<Race>` | e.g. `race_kills:Shek` |
+| `faction_kills:<Faction>`, `faction_kos:<Faction>` | e.g. `faction_kills:The Holy Nation` |
+| `npc_kills:<Name>`, `npc_kos:<Name>`, `npc_takedowns:<Name>` | unique NPCs only, e.g. `npc_takedowns:Tinfist` |
+| `burst_kills:<s>`, `burst_takedowns:<s>` | most kills (or kills + KOs) within `<s>` seconds of game time |
 
-## Compilar
+Rules for names:
+- Races, factions and NPCs always use the game's **English** names, whatever language you play in.
+- `*` matches anything, e.g. `*Skeleton*` matches Skeleton MKI, MKII...
+- `,` separates alternatives, e.g. `Dust Bandits,Hungry Bandits`.
 
-Os plugins do KenshiLib **precisam** do compilador do Visual Studio 2010 (toolset `v100`, x64),
-porque o Kenshi foi compilado com ele e o plugin divide STL/CRT com o jogo.
+Other options:
+- `[Name]` starts a category.
+- `?id` makes an achievement secret: it shows as `???` until it's unlocked.
 
-### Compilador (sem Visual Studio, sem admin)
+Settings in the same file:
 
-O VC++ 2010 x64 vem **extraído** (não instalado) do Windows SDK 7.1 em `F:\Claude\_ferramentas\vc2010`
-(`bin\amd64`, `include`, `lib\amd64`, `sdk\include`, `sdk\lib\x64` — cl 16.00.30319.01). Para refazer:
+| Setting | What it does |
+|---|---|
+| `@key = F6` | panel key: F1–F12, a letter/digit or NUM0–NUM9 |
+| `@sound = Notifications:Building_Complete` | unlock sound: a Kenshi sound event (default, follows the game volume), any `.wav` in the mod folder (`achievement.wav` is included), or `none` |
+| `@victims = 5` | how many races and factions "Most frequent victims" lists; a number or `all` |
+| `@debug = 0` | `1` logs every kill, KO and hit to `RE_Kenshi_log.txt`, for bug reports |
 
-1. Baixar a ISO oficial `GRMSDKX_EN_DVD.iso` (SDK 7.1 x64, 571 MB) do download.microsoft.com e montar.
-2. Extrair com [lessmsi](https://github.com/activescott/lessmsi) (`lessmsi x <msi> <pasta>\`):
-   `Setup\vc_stdamd64`, `Setup\vc_stdx86` e `Setup\WinSDKBuild_amd64`.
-3. Montar `vc2010\`: `bin\amd64` ← `vc_stdamd64\...\VC\bin\amd64` (+ `Win\System64\msvcr100.dll`);
-   `include` e `lib\amd64` ← `vc_stdx86\...\VC`; `sdk\include` e `sdk\lib\x64` ← `...\Windows\v7.1`.
+Never change an `id` after you've played with it: saves track unlocks by id.
 
-### Dependências (`deps/`, fora do git)
+## Languages
 
-- `deps/KenshiLib` — clone de [BFrizzleFoShizzle/KenshiLib](https://github.com/BFrizzleFoShizzle/KenshiLib)
-  na tag **v0.5.1**, com o `KenshiLib.lib` do zip da release copiado em `Libraries/`.
-  **Tem que bater com o KenshiLib.dll instalado no jogo** — ver `scripts/atualizar-rekenshi.ps1`.
-- `deps/boost_1_60_0` — `boost.zip` do [KenshiLib_Examples_deps](https://github.com/BFrizzleFoShizzle/KenshiLib_Examples_deps)
-  (git LFS), já com `stage/lib` vc100.
+The mod follows the language you picked in Kenshi (`language=` in `settings.cfg`):
+
+- **The mod's own texts** come from `lang/<language>.txt` (e.g. `pt_BR.txt`), on top of `lang/en.txt`.
+  Included: English and Português (Brasil).
+- **Race and faction names** arrive translated by the game ("Bandidos da Poeira"). The mod uses
+  Kenshi's own dictionary (`locale/<language>/gamedata.po`) to map them back to English ("Dust Bandits").
+  That's why `achievements.txt` is the same in every language.
+
+**Translations are welcome!** Copy `en.txt`, name the copy after the language code, and translate it.
+Anything you leave out stays in English. See [#15](https://github.com/LucasSKrewer/kenshi-achievements/issues/15).
+
+## How kills and knockouts are credited
+
+When someone dies (`Character::declareDead`) or is knocked out, the mod looks for the attacker in this
+order:
+
+1. A squad member running a **stealth knockout / assassination** on the victim. Stealth attacks don't
+   wound the victim, so this has to be checked first.
+2. `victim->lastGuyWhoDefeatedMe`, if it's one of your characters.
+3. Otherwise, the last squad member who **wounded** the victim (`MedicalSystem::addWound`, melee or
+   ranged) in the last 30 seconds.
+
+Details:
+- **Knockouts.** Going down from damage doesn't go through the game's knockout function, so the mod
+  checks every 250 ms whether a victim your squad recently hit has gone down.
+- **Waiting for the attacker.** A KO with no attacker yet waits up to 3 s, because the game often fills
+  the attacker in a moment later.
+- **Downed victims.** If a victim dies while still down, the kill belongs to whoever downed it. For
+  example, butchering a knocked-out animal doesn't give the kill to the looter, and an animal downed by
+  an outsider doesn't count for you.
+- **What doesn't count.** Your own squad members never count as victims, and each death counts once.
+  Squad members who die go to the Memorial.
+
+## Building
+
+KenshiLib plugins **must** be built with the Visual Studio 2010 compiler (toolset `v100`, x64): Kenshi
+was built with it, and the plugin shares the STL/CRT with the game. Keep the code VS2010-compatible: no
+range-for, initializer lists or `enum class`. Source files are UTF-8 without BOM.
+
+### Compiler (no Visual Studio, no admin rights)
+
+You can **extract** VC++ 2010 x64 from the Windows SDK 7.1 instead of installing it:
+
+1. Download the official `GRMSDKX_EN_DVD.iso` (SDK 7.1 x64, 571 MB) from download.microsoft.com and
+   mount it.
+2. Extract `Setup\vc_stdamd64`, `Setup\vc_stdx86` and `Setup\WinSDKBuild_amd64` with
+   [lessmsi](https://github.com/activescott/lessmsi) (`lessmsi x <msi> <folder>\`).
+3. Assemble a `vc2010\` folder:
+
+   | Folder in `vc2010\` | Copy from |
+   |---|---|
+   | `bin\amd64` | `vc_stdamd64\...\VC\bin\amd64`, plus `Win\System64\msvcr100.dll` |
+   | `include` and `lib\amd64` | `vc_stdx86\...\VC` |
+   | `sdk\include` and `sdk\lib\x64` | `...\Windows\v7.1` |
+
+   The result is cl 16.00.30319.01.
+
+The `KenshiAchievements.vcxproj` is still in the repo, for anyone with Visual Studio and the v100
+toolset installed.
+
+### Dependencies (`deps/`, not in git)
+
+- `deps/KenshiLib`: a clone of [BFrizzleFoShizzle/KenshiLib](https://github.com/BFrizzleFoShizzle/KenshiLib)
+  at tag **v0.5.1**, with `KenshiLib.lib` from the release zip copied into `Libraries/`.
+  **It must match the KenshiLib.dll installed in the game**. See `scripts/atualizar-rekenshi.ps1`.
+- `deps/boost_1_60_0`: `boost.zip` from
+  [KenshiLib_Examples_deps](https://github.com/BFrizzleFoShizzle/KenshiLib_Examples_deps) (git LFS),
+  which already has the vc100 `stage/lib`.
 
 ### Build
 
 ```
-powershell -ExecutionPolicy Bypass -File build.ps1
+powershell -ExecutionPolicy Bypass -File build.ps1 -VcDir <path to vc2010> -KenshiDir <Kenshi folder>
 ```
 
-A DLL sai em `mod/KenshiAchievements/` e é copiada para `E:\steam\steamapps\common\Kenshi\mods\KenshiAchievements`
-(use `-NoInstall` para só compilar). Depois ative **KenshiAchievements** no launcher do Kenshi.
-O `KenshiAchievements.vcxproj` continua aí para quem tiver Visual Studio com o toolset v100.
+The DLL is written to `mod/KenshiAchievements/`, and the mod folder is copied into
+`<Kenshi>\mods\KenshiAchievements`. Use `-NoInstall` to only build. The plugin logs to
+`RE_Kenshi_log.txt` in the game folder, with the prefix `KenshiAchievements:`.
 
-Logs do plugin: `RE_Kenshi_log.txt` na pasta do jogo (prefixo `KenshiAchievements:`).
-
-### Testes (sem o jogo)
+### Tests (no game needed)
 
 ```
 powershell -ExecutionPolicy Bypass -File tests\rodar-testes.ps1
 ```
 
-Compila `tests/teste_logica.cpp` com o mesmo VC++ 2010 e testa o dicionário de nomes, os textos por idioma,
-a contagem, as conquistas e o texto das duas abas.
+This builds `tests/teste_logica.cpp` with the same VC++ 2010 compiler. It tests:
+- the name dictionary and the per-language texts;
+- counting, achievements and character merging;
+- the text of the panel tabs.
 
-## Validado no jogo
+## License
 
-- Plugin carrega, hooks instalam, save/load dos contadores (tipo 4242) funciona.
-- Morte: `lastGuyWhoDefeatedMe` já vem preenchido em `declareDead` e atribui ao personagem certo.
-- Com o Genesis ativo (nenhum mod da Workshop tem DLL; raças/facções conferidas).
-- **Remover o mod é seguro:** o save carrega normal sem ele. Mas se salvar com o mod desativado, esse save novo perde os contadores (o Kenshi descarta o registro desconhecido); os saves antigos mantêm.
-- KO em luta: pelo último golpe do grupo (`addWound`) ou `lastGuyWhoDefeatedMe`, resolvido em até 3 s.
-- KO/assassinato furtivo: pela tarefa `STEALTH_KNOCKOUT`/`STEALTH_KILL` de quem está do grupo com a vítima como alvo.
-- Homônimos no grupo (dois "The Arbiter") ficam separados; o painel mostra a raça.
+[GPLv3](LICENSE), the same license as [KenshiLib](https://github.com/BFrizzleFoShizzle/KenshiLib), which
+the plugin links against. You're free to use, modify and fork it; distributed forks stay open under the
+GPLv3. If it's useful to you, leave a ⭐: it helps other people find the mod.
 
-Bugs e ideias: [issues](https://github.com/LucasSKrewer/kenshi-achievements/issues).
-Histórico de versões: [CHANGELOG.md](CHANGELOG.md).
+## Credits
 
-## Publicar atualização na Workshop
-
-1. `build.ps1` (compila e instala em `Kenshi\mods\KenshiAchievements`, junto com o `_KenshiAchievements.info`).
-2. Abrir o FCS com **só** o `KenshiAchievements.mod` marcado (nada de Genesis & cia., senão viram dependência) e **não salvar**.
-3. Botão **Steam Workshop** → Upload. O `.info` guarda o ID `3809336824`: sem ele o FCS cria outro item.
-4. Descrição completa (BBCode) em `steam/description.bbcode`, editada direto na página da Workshop.
-5. Nova entrada no `CHANGELOG.md` e em `steam/changenotes-<versão>.bbcode` (colar na aba *Change Notes* da Workshop); tag `vX.Y.Z` + release com o zip.
-
-## Licença
-
-[GPLv3](LICENSE) — o mesmo do [KenshiLib](https://github.com/BFrizzleFoShizzle/KenshiLib), ao qual o plugin é ligado.
-Pode usar, modificar e forkar; forks distribuídos continuam abertos sob a GPLv3.
-Se for útil pra você, deixa uma ⭐ — ajuda outras pessoas a achar o mod.
-
-## Créditos
-
-- [BFrizzleFoShizzle](https://github.com/BFrizzleFoShizzle) — RE_Kenshi e KenshiLib, sem os quais nada disso existe.
-- Kenshi © Lo-Fi Games. Este projeto não inclui nenhum arquivo do jogo; o `achievement.wav` é sintetizado
-  por `scripts/gerar-som.py`.
+- [BFrizzleFoShizzle](https://github.com/BFrizzleFoShizzle) for RE_Kenshi and KenshiLib, which make all
+  of this possible.
+- Everyone who reported bugs and suggested features, on GitHub and in the Workshop comments.
+- Kenshi © Lo-Fi Games. This project doesn't include any game files. `achievement.wav` is synthesized
+  by `scripts/gerar-som.py`.

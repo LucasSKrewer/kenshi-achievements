@@ -20,6 +20,8 @@ namespace Stats
 		int kos;
 		int stealthKos; // parte dos kos feita por nocaute furtivo
 		int limbs;      // membros decepados
+		// Vítimas desse personagem (#28), em inglês. Só a partir da v1.5.0: saves antigos não têm.
+		std::map<std::string, int> raceKills, raceKOs, factionKills, factionKOs;
 		CharStats() : kills(0), kos(0), stealthKos(0), limbs(0) {}
 	};
 
@@ -134,6 +136,20 @@ namespace Stats
 
 	// Soma as contagens de `from` em `to` (o mesmo personagem com handle novo) e apaga `from`.
 	void mergeCharacter(const std::string& from, const std::string& to);
+
+	// Aba "Vítimas" (#34/#28): uma linha por raça ou facção, ordenada por kills. key vazio = grupo todo;
+	// senão, só as vítimas daquele personagem.
+	struct VictimRow
+	{
+		std::string name;
+		int kills, kos;
+		VictimRow() : kills(0), kos(0) {}
+	};
+	std::vector<VictimRow> victimRows(bool factions, const std::string& key = std::string());
+
+	// Exportar (#27): texto legível com tudo e CSV (uma linha por personagem, raça e facção).
+	std::string exportText(const std::string& selectedKey, const std::string& selectedName);
+	std::string exportCsv();
 
 	// Aba "Conquistas": por categoria, concluídas e pendentes com progresso.
 	std::string achievementsReport();

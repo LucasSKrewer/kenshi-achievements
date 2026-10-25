@@ -9,6 +9,19 @@ panel.title = Kills & Achievements
 tab.stats = Statistics
 tab.achievements = Achievements
 tab.memorial = Memorial
+tab.victims = Victims
+
+victims.squad = Whole squad
+victims.selected = Selected: {name}
+victims.selected_none = Selected character
+victims.title_squad = Victims of the whole squad (kills / KOs)
+victims.title_char = Victims of {name} (kills / KOs)
+victims.since = counted from v1.5.0 on
+
+export.button = Export
+export.done = Statistics exported to {path}
+export.failed = Could not write {path}
+export.victims = --- Victims (kills / KOs) ---
 
 stats.line = Kills: {kills}    KOs: {kos}    Limbs: {limbs}
 stats.stealth = Stealth knockouts: {n}
@@ -27,6 +40,8 @@ table.kills = Kills
 table.kos = KOs
 table.stealth = Stealth
 table.limbs = Limbs
+table.race = Race
+table.faction = Faction
 
 mem.none = (nobody has fallen)
 mem.by = Killed by {killer}

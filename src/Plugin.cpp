@@ -47,7 +47,9 @@
 #include <boost/thread/mutex.hpp>
 
 #include <cctype>
+#include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <deque>
 #include <fstream>
 #include <iterator>
@@ -103,8 +105,22 @@ namespace
 	{
 		bool player;
 		std::string key, name, race, desc;
+		double hours; // hora do jogo em que derrubou (vale entre saves), pra descartar os antigos
 	};
 	std::map<std::string, Downer> downedBy; // chave = handle da vítima
+	// Vai pro save (#36): salvar com a vítima caída e carregar perdia quem derrubou, e a morte por
+	// sangramento depois não contava. Mais velho que isso a vítima já levantou ou morreu.
+	const double DOWNER_KEEP_HOURS = 48.0;
+	const char* const P_DOWNER_KEY = "w.k:"; // + handle da vítima
+	const char* const P_DOWNER_NAME = "w.n:";
+	const char* const P_DOWNER_RACE = "w.r:";
+	const char* const P_DOWNER_PLAYER = "w.p:";
+	const char* const P_DOWNER_HOUR = "w.h:";
+
+	double gameHours()
+	{
+		return ou ? ou->getTimeStamp_inGameHours().getTotalHours() : 0.0;
+	}
 
 	// ---------- utilitários ----------
 
@@ -255,7 +271,62 @@ namespace
 		d.name = downer->getName();
 		d.race = raceName(downer);
 		d.desc = describe(downer);
+		d.hours = gameHours();
 		downedBy[handleKey(victim)] = d;
+	}
+
+	// Chamar com o lock seguro.
+	void exportDowners(std::map<std::string, int>& ints, std::map<std::string, std::string>& strs)
+	{
+		double now = gameHours();
+		for (std::map<std::string, Downer>::const_iterator it = downedBy.begin(); it != downedBy.end(); ++it)
+		{
+			const Downer& d = it->second;
+			if (now - d.hours > DOWNER_KEEP_HOURS)
+				continue;
+			const std::string& v = it->first;
+			ints[P_DOWNER_PLAYER + v] = d.player ? 1 : 0;
+			ints[P_DOWNER_HOUR + v] = (int)d.hours;
+			strs[P_DOWNER_KEY + v] = d.key;
+			strs[P_DOWNER_NAME + v] = d.name;
+			if (!d.race.empty())
+				strs[P_DOWNER_RACE + v] = d.race;
+		}
+	}
+
+	bool startsWith(const std::string& s, const char* prefix, std::string& rest)
+	{
+		size_t n = strlen(prefix);
+		if (s.compare(0, n, prefix) != 0)
+			return false;
+		rest = s.substr(n);
+		return true;
+	}
+
+	// Chamar com o lock seguro.
+	void importDowners(const std::map<std::string, int>& ints, const std::map<std::string, std::string>& strs)
+	{
+		downedBy.clear();
+		for (std::map<std::string, int>::const_iterator it = ints.begin(); it != ints.end(); ++it)
+		{
+			std::string v;
+			if (!startsWith(it->first, P_DOWNER_PLAYER, v))
+				continue;
+			std::map<std::string, std::string>::const_iterator key = strs.find(P_DOWNER_KEY + v);
+			if (key == strs.end())
+				continue;
+			Downer d;
+			d.player = it->second != 0;
+			d.key = key->second;
+			std::map<std::string, std::string>::const_iterator s = strs.find(P_DOWNER_NAME + v);
+			d.name = s != strs.end() ? s->second : "";
+			s = strs.find(P_DOWNER_RACE + v);
+			d.race = s != strs.end() ? s->second : "";
+			std::map<std::string, int>::const_iterator h = ints.find(P_DOWNER_HOUR + v);
+			d.hours = h != ints.end() ? h->second : 0.0;
+			d.desc = "'" + d.name + "' (do save)";
+			downedBy[v] = d;
+		}
 	}
 
 	// Chamar com o lock seguro.
@@ -553,7 +624,9 @@ namespace
 		downedBy.clear();
 		downNow.clear();
 		lastHitOnSquad.clear();
-		lastReconcile = 0; // confere logo depois de carregar
+		// Confere 10 s depois de carregar: no 1º frame o grupo ainda não acha ninguém pelo handle
+		// (o log mostrava "0 com handle válido, 35 sem dono no grupo" e a conferência não servia pra nada)
+		lastReconcile = GetTickCount();
 		reconciledOnce = false;
 	}
 
@@ -652,6 +725,7 @@ namespace
 		{
 			boost::lock_guard<boost::mutex> g(lock);
 			Stats::exportTo(ints, strs);
+			exportDowners(ints, strs);
 		}
 
 		GameData* d = container->createNewData((itemType)SAVE_ITEM_TYPE, SAVE_SID, "Kenshi Achievements");
@@ -694,7 +768,14 @@ namespace
 
 		boost::lock_guard<boost::mutex> g(lock);
 		Stats::importFrom(ints, strs);
+		importDowners(ints, strs);
 		DebugLog("KenshiAchievements: contadores carregados do save");
+		if (debug)
+		{
+			std::ostringstream o;
+			o << downedBy.size() << " vítima(s) caída(s) com quem derrubou, vindas do save";
+			dbg(o.str());
+		}
 	}
 
 	void (*newGame_orig)(SaveManager*, const std::string&) = NULL;
@@ -720,11 +801,23 @@ namespace
 	MyGUI::Button* tabStats = NULL;
 	MyGUI::Button* tabAchievements = NULL;
 	MyGUI::Button* tabMemorial = NULL;
+	MyGUI::Button* tabVictims = NULL;
 	// Tabela por personagem na aba Estatísticas (#22): a fonte do Kenshi não é monoespaçada, então
 	// alinhar com espaços não funciona; é a mesma tabela das telas de salvar/carregar.
 	MyGUI::MultiListBox* charTable = NULL;
 	std::string tableSignature; // só refaz as linhas quando mudam (refazer perde a ordenação escolhida)
-	int currentTab = 0; // 0 = estatísticas, 1 = conquistas, 2 = memorial (lembrado entre aberturas)
+	// Aba Vítimas (#34): raças e facções em tabelas; do grupo todo ou do personagem selecionado (#28)
+	MyGUI::Button* victimsSquadBtn = NULL;
+	MyGUI::Button* victimsSelBtn = NULL;
+	MyGUI::MultiListBox* raceTable = NULL;
+	MyGUI::MultiListBox* factionTable = NULL;
+	std::string raceSignature, factionSignature;
+	bool victimsOfSelected = false; // lembrado entre aberturas
+	std::string victimsKey; // personagem da aba Vítimas (vazio = grupo); definido em buildReport
+	MyGUI::Button* exportBtn = NULL; // #27
+	bool exportRequested = false;
+	const int TAB_STATS = 0, TAB_ACHIEVEMENTS = 1, TAB_MEMORIAL = 2, TAB_VICTIMS = 3;
+	int currentTab = TAB_STATS; // lembrado entre aberturas
 	std::string panelLastText; // só reescreve o texto quando muda (setCaption volta a rolagem pro topo)
 	bool panelCloseRequested = false;
 	DWORD panelRefreshedAt = 0;
@@ -737,16 +830,33 @@ namespace
 	}
 
 	// Estatísticas: texto em cima e tabela embaixo. Conquistas/Memorial: só o texto, na altura toda.
+	// Vítimas: botões grupo/selecionado, uma linha de título e as duas tabelas. Embaixo de tudo, Exportar.
 	void layoutForTab()
 	{
 		if (!panelText)
 			return;
-		bool stats = currentTab == 0 && charTable;
+		bool stats = currentTab == TAB_STATS && charTable;
+		bool victims = currentTab == TAB_VICTIMS;
 		if (charTable)
-			charTable->setVisible(currentTab == 0);
-		panelText->setRealCoord(0.02f, 0.10f, 0.96f, stats ? 0.36f : 0.88f);
+			charTable->setVisible(currentTab == TAB_STATS);
+		if (victimsSquadBtn)
+			victimsSquadBtn->setVisible(victims);
+		if (victimsSelBtn)
+			victimsSelBtn->setVisible(victims);
+		if (raceTable)
+			raceTable->setVisible(victims);
+		if (factionTable)
+			factionTable->setVisible(victims);
+		// Na aba Vítimas a caixa é só uma linha de título: sem barra de rolagem
+		panelText->setVisibleVScroll(!victims);
+		if (victims)
+			panelText->setRealCoord(0.02f, 0.17f, 0.96f, 0.09f);
+		else
+			panelText->setRealCoord(0.02f, 0.10f, 0.96f, stats ? 0.36f : 0.80f);
 		panelLastText.clear();
 		tableSignature.clear();
+		raceSignature.clear();
+		factionSignature.clear();
 	}
 
 	// Clique no cabeçalho ordena; nas colunas de número, por valor ("100" depois de "20").
@@ -765,9 +875,32 @@ namespace
 		return o.str();
 	}
 
+	void fillVictimTable(MyGUI::MultiListBox* table, std::string& signature, const std::vector<Stats::VictimRow>& rows)
+	{
+		if (!table)
+			return;
+		// Começa com algo fixo: lista vazia não pode dar a mesma assinatura da tabela recém-limpa (""),
+		// senão trocar pra um personagem sem vítimas deixava as linhas do grupo na tela
+		std::ostringstream sig;
+		sig << "rows:" << rows.size() << '\n';
+		for (size_t i = 0; i < rows.size(); ++i)
+			sig << rows[i].name << '|' << rows[i].kills << '|' << rows[i].kos << '\n';
+		if (sig.str() == signature)
+			return;
+		signature = sig.str();
+		table->removeAllItems();
+		for (size_t i = 0; i < rows.size(); ++i)
+		{
+			table->addItem(rows[i].name);
+			table->setSubItemNameAt(1, i, itos(rows[i].kills));
+			table->setSubItemNameAt(2, i, itos(rows[i].kos));
+		}
+	}
+
 	void fillTable(const std::vector<Stats::CharRow>& rows)
 	{
 		std::ostringstream sig;
+		sig << "rows:" << rows.size() << '\n'; // ver fillVictimTable
 		for (size_t i = 0; i < rows.size(); ++i)
 			sig << rows[i].name << '|' << rows[i].kills << '|' << rows[i].kos << '|' << rows[i].stealthKos << '|' << rows[i].limbs << '\n';
 		if (sig.str() == tableSignature)
@@ -793,13 +926,43 @@ namespace
 			tabAchievements->setStateSelected(tab == 1);
 		if (tabMemorial)
 			tabMemorial->setStateSelected(tab == 2);
+		if (tabVictims)
+			tabVictims->setStateSelected(tab == TAB_VICTIMS);
 		layoutForTab();
 		panelRefreshedAt = 0; // força refresh no próximo frame
 	}
 
 	void onTabClick(MyGUI::Widget* sender)
 	{
-		selectTab(sender == tabAchievements ? 1 : (sender == tabMemorial ? 2 : 0));
+		if (sender == tabAchievements)
+			selectTab(TAB_ACHIEVEMENTS);
+		else if (sender == tabMemorial)
+			selectTab(TAB_MEMORIAL);
+		else if (sender == tabVictims)
+			selectTab(TAB_VICTIMS);
+		else
+			selectTab(TAB_STATS);
+	}
+
+	void onVictimsModeClick(MyGUI::Widget* sender)
+	{
+		victimsOfSelected = sender == victimsSelBtn;
+		selectTab(TAB_VICTIMS);
+	}
+
+	void onExportClick(MyGUI::Widget* sender)
+	{
+		exportRequested = true; // grava no próximo frame, fora do evento do botão
+	}
+
+	void selectedCharacter(std::string& key, std::string& name)
+	{
+		Character* sel = (ou && ou->player) ? ou->player->selectedCharacter.getCharacter() : NULL;
+		if (sel)
+		{
+			key = charKey(sel);
+			name = sel->getName();
+		}
 	}
 
 	// Texto da aba atual. Chamar na thread principal (lê o personagem selecionado).
@@ -816,14 +979,67 @@ namespace
 			return Stats::memorialReport();
 		}
 		std::string selKey, selName;
-		Character* sel = (ou && ou->player) ? ou->player->selectedCharacter.getCharacter() : NULL;
-		if (sel)
+		selectedCharacter(selKey, selName);
+		if (currentTab == TAB_VICTIMS)
 		{
-			selKey = charKey(sel);
-			selName = sel->getName();
+			if (victimsSelBtn)
+				victimsSelBtn->setCaption(selName.empty() ? Lang::tr("victims.selected_none", "Selected character")
+					: Lang::fill(Lang::tr("victims.selected", "Selected: {name}"), "name", selName));
+			if (victimsSquadBtn)
+			{
+				victimsSquadBtn->setStateSelected(!victimsOfSelected);
+				victimsSelBtn->setStateSelected(victimsOfSelected);
+			}
+			if (!victimsOfSelected)
+			{
+				victimsKey.clear();
+				return Lang::tr("victims.title_squad", "Victims of the whole squad (kills / KOs)");
+			}
+			victimsKey = selKey;
+			if (selName.empty())
+			{
+				victimsKey = "-"; // ninguém selecionado: tabelas vazias, não as do grupo
+				return Lang::tr("stats.no_selection", "(no character selected)");
+			}
+			std::string title = Lang::fill(Lang::tr("victims.title_char", "Victims of {name} (kills / KOs)"), "name", selName);
+			boost::lock_guard<boost::mutex> g(lock);
+			if (Stats::victimRows(false, selKey).empty())
+				title += "  -  " + Lang::tr("victims.since", "counted from v1.5.0 on");
+			return title;
 		}
 		boost::lock_guard<boost::mutex> g(lock);
 		return Stats::statsReport(selKey, selName, charTable == NULL); // com tabela, a lista sai do texto
+	}
+
+	void log(const std::string& owner, const std::string& msg);
+
+	// #27: grava exports/stats-<data>.txt e .csv na pasta do mod e avisa no log de mensagens.
+	void exportStats()
+	{
+		std::string selKey, selName;
+		selectedCharacter(selKey, selName);
+		std::string text, table;
+		{
+			boost::lock_guard<boost::mutex> g(lock);
+			text = Stats::exportText(selKey, selName);
+			table = Stats::exportCsv();
+		}
+		std::string dir = modDir() + "exports\\";
+		CreateDirectoryA(dir.c_str(), NULL);
+		SYSTEMTIME t;
+		GetLocalTime(&t);
+		char stamp[32];
+		sprintf_s(stamp, "%04d-%02d-%02d_%02d%02d%02d", t.wYear, t.wMonth, t.wDay, t.wHour, t.wMinute, t.wSecond);
+		std::string base = dir + "stats-" + stamp;
+		std::ofstream txt((base + ".txt").c_str(), std::ios::binary);
+		txt << "\xEF\xBB\xBF" << text; // BOM: o Bloco de Notas e o Excel acertam a acentuação
+		std::ofstream csvFile((base + ".csv").c_str(), std::ios::binary);
+		csvFile << "\xEF\xBB\xBF" << table;
+		bool ok = txt.good() && csvFile.good();
+		std::string msg = Lang::fill(Lang::tr(ok ? "export.done" : "export.failed",
+			ok ? "Statistics exported to {path}" : "Could not write {path}"), "path", base + ".txt / .csv");
+		log(Lang::tr("panel.title", "Kills & Achievements"), msg);
+		DebugLog("KenshiAchievements: " + msg);
 	}
 	bool keyWasDown = false;
 
@@ -916,7 +1132,13 @@ namespace
 			tabStats = NULL;
 			tabAchievements = NULL;
 			tabMemorial = NULL;
+			tabVictims = NULL;
 			charTable = NULL;
+			victimsSquadBtn = NULL;
+			victimsSelBtn = NULL;
+			raceTable = NULL;
+			factionTable = NULL;
+			exportBtn = NULL;
 			return;
 		}
 		panel = gui->createWidgetReal<MyGUI::Window>("Kenshi_WindowCX", 0.30f, 0.15f, 0.40f, 0.65f,
@@ -924,19 +1146,33 @@ namespace
 		panel->setCaption(Lang::tr("panel.title", "Kills & Achievements") + "  v" + VERSION);
 		MyGUI::Widget* client = panel->getClientWidget();
 
-		// Abas: três botões no topo, o da aba atual fica "selecionado"
-		tabStats = client->createWidgetReal<MyGUI::Button>("Kenshi_Button1", 0.02f, 0.01f, 0.31f, 0.07f,
+		// Abas: quatro botões no topo, o da aba atual fica "selecionado"
+		MyGUI::Button** tabs[] = { &tabStats, &tabAchievements, &tabMemorial, &tabVictims };
+		const char* tabKeys[] = { "tab.stats", "tab.achievements", "tab.memorial", "tab.victims" };
+		const char* tabDefaults[] = { "Statistics", "Achievements", "Memorial", "Victims" };
+		for (int i = 0; i < 4; ++i)
+		{
+			MyGUI::Button* b = client->createWidgetReal<MyGUI::Button>("Kenshi_Button1", 0.02f + i * 0.2425f, 0.01f,
+				0.23f, 0.07f, MyGUI::Align::Top | MyGUI::Align::HStretch);
+			b->setCaption(Lang::tr(tabKeys[i], tabDefaults[i]));
+			b->eventMouseButtonClick += MyGUI::newDelegate(onTabClick);
+			*tabs[i] = b;
+		}
+
+		// Aba Vítimas: grupo todo / personagem selecionado
+		victimsSquadBtn = client->createWidgetReal<MyGUI::Button>("Kenshi_Button1", 0.02f, 0.10f, 0.47f, 0.06f,
 			MyGUI::Align::Top | MyGUI::Align::HStretch);
-		tabStats->setCaption(Lang::tr("tab.stats", "Statistics"));
-		tabStats->eventMouseButtonClick += MyGUI::newDelegate(onTabClick);
-		tabAchievements = client->createWidgetReal<MyGUI::Button>("Kenshi_Button1", 0.345f, 0.01f, 0.31f, 0.07f,
+		victimsSquadBtn->setCaption(Lang::tr("victims.squad", "Whole squad"));
+		victimsSquadBtn->eventMouseButtonClick += MyGUI::newDelegate(onVictimsModeClick);
+		victimsSelBtn = client->createWidgetReal<MyGUI::Button>("Kenshi_Button1", 0.51f, 0.10f, 0.47f, 0.06f,
 			MyGUI::Align::Top | MyGUI::Align::HStretch);
-		tabAchievements->setCaption(Lang::tr("tab.achievements", "Achievements"));
-		tabAchievements->eventMouseButtonClick += MyGUI::newDelegate(onTabClick);
-		tabMemorial = client->createWidgetReal<MyGUI::Button>("Kenshi_Button1", 0.67f, 0.01f, 0.31f, 0.07f,
-			MyGUI::Align::Top | MyGUI::Align::HStretch);
-		tabMemorial->setCaption(Lang::tr("tab.memorial", "Memorial"));
-		tabMemorial->eventMouseButtonClick += MyGUI::newDelegate(onTabClick);
+		victimsSelBtn->setCaption(Lang::tr("victims.selected_none", "Selected character"));
+		victimsSelBtn->eventMouseButtonClick += MyGUI::newDelegate(onVictimsModeClick);
+
+		exportBtn = client->createWidgetReal<MyGUI::Button>("Kenshi_Button1", 0.66f, 0.92f, 0.32f, 0.06f,
+			MyGUI::Align::Bottom | MyGUI::Align::Right);
+		exportBtn->setCaption(Lang::tr("export.button", "Export"));
+		exportBtn->eventMouseButtonClick += MyGUI::newDelegate(onExportClick);
 
 		// Mesma skin/propriedades do log de mensagens do jogo (MessagesTextBox em Kenshi_OverviewWindow.layout):
 		// multilinha, texto no topo e barra de rolagem. A Kenshi_EditBox é de uma linha só (mostrava só a 1ª linha).
@@ -952,7 +1188,7 @@ namespace
 		panelText->setMaxTextLength(1000000);
 		panelLastText.clear();
 
-		charTable = client->createWidgetReal<MyGUI::MultiListBox>("Kenshi_MultiListBox", 0.02f, 0.47f, 0.96f, 0.51f,
+		charTable = client->createWidgetReal<MyGUI::MultiListBox>("Kenshi_MultiListBox", 0.02f, 0.47f, 0.96f, 0.43f,
 			MyGUI::Align::Stretch);
 		int width = charTable->getWidth() - 30; // desconta a barra de rolagem
 		int number = width * 13 / 100;
@@ -963,6 +1199,24 @@ namespace
 		charTable->addColumn(Lang::tr("table.limbs", "Limbs"), number);
 		charTable->requestOperatorLess = MyGUI::newDelegate(tableLess);
 		tableSignature.clear();
+
+		MyGUI::MultiListBox** victimTables[] = { &raceTable, &factionTable };
+		const char* firstColKey[] = { "table.race", "table.faction" };
+		const char* firstColDefault[] = { "Race", "Faction" };
+		for (int i = 0; i < 2; ++i)
+		{
+			MyGUI::MultiListBox* t = client->createWidgetReal<MyGUI::MultiListBox>("Kenshi_MultiListBox", 0.02f,
+				i == 0 ? 0.27f : 0.59f, 0.96f, 0.31f, MyGUI::Align::Stretch);
+			int w = t->getWidth() - 30;
+			int num = w * 18 / 100;
+			t->addColumn(Lang::tr(firstColKey[i], firstColDefault[i]), w - 2 * num);
+			t->addColumn(Lang::tr("table.kills", "Kills"), num);
+			t->addColumn(Lang::tr("table.kos", "KOs"), num);
+			t->requestOperatorLess = MyGUI::newDelegate(tableLess);
+			*victimTables[i] = t;
+		}
+		raceSignature.clear();
+		factionSignature.clear();
 
 		panel->eventWindowButtonPressed += MyGUI::newDelegate(onPanelButton);
 		selectTab(currentTab);
@@ -1065,6 +1319,10 @@ namespace
 			byNameRace[name + "|" + raceName(c)].push_back(c);
 			byName[name].push_back(c);
 		}
+		// Ainda carregando (o grupo aparece depois da tela de carregamento): sem ninguém, tudo viraria
+		// "sem dono" e o resumo do log não serviria pra nada
+		if (byName.empty())
+			return;
 
 		boost::lock_guard<boost::mutex> g(lock);
 		bool firstRun = !reconciledOnce;
@@ -1176,6 +1434,12 @@ namespace
 			playUnlockSound();
 		showNextToast(gui);
 
+		if (exportRequested)
+		{
+			exportRequested = false;
+			exportStats();
+		}
+
 		if (panelCloseRequested)
 		{
 			panelCloseRequested = false;
@@ -1202,7 +1466,7 @@ namespace
 				panelText->setVScrollPosition((std::min)(scroll, panelText->getVScrollRange()));
 				panelLastText = text;
 			}
-			if (charTable && currentTab == 0)
+			if (charTable && currentTab == TAB_STATS)
 			{
 				std::vector<Stats::CharRow> rows;
 				{
@@ -1210,6 +1474,17 @@ namespace
 					rows = Stats::characterRows();
 				}
 				fillTable(rows);
+			}
+			if (currentTab == TAB_VICTIMS)
+			{
+				std::vector<Stats::VictimRow> races, factions;
+				{
+					boost::lock_guard<boost::mutex> g(lock);
+					races = Stats::victimRows(false, victimsKey);
+					factions = Stats::victimRows(true, victimsKey);
+				}
+				fillVictimTable(raceTable, raceSignature, races);
+				fillVictimTable(factionTable, factionSignature, factions);
 			}
 			panelRefreshedAt = GetTickCount();
 		}

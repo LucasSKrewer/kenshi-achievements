@@ -48,6 +48,12 @@ namespace Stats
 		const char* const P_BURST_TAKEDOWNS = "b.t:";
 		const char* const P_UNLOCKED = "a:";
 		const char* const P_FALLEN = "d."; // d.<índice>.<campo>
+		// Vítimas por personagem (#28): <prefixo><chave do personagem>|<raça ou facção>. A chave (handle)
+		// só tem dígitos e '-', então o primeiro '|' separa.
+		const char* const P_CHAR_RACE_KILLS = "c.rk:";
+		const char* const P_CHAR_RACE_KOS = "c.ro:";
+		const char* const P_CHAR_FACTION_KILLS = "c.fk:";
+		const char* const P_CHAR_FACTION_KOS = "c.fo:";
 
 		std::string trim(const std::string& s)
 		{
@@ -268,8 +274,8 @@ namespace Stats
 			{
 				++c.kills;
 				++totalKills;
-				if (!t.race.empty()) ++killsByRace[t.race];
-				if (!t.faction.empty()) ++killsByFaction[t.faction];
+				if (!t.race.empty()) { ++killsByRace[t.race]; ++c.raceKills[t.race]; }
+				if (!t.faction.empty()) { ++killsByFaction[t.faction]; ++c.factionKills[t.faction]; }
 				if (!t.npc.empty()) ++killsByNpc[t.npc];
 			}
 			else
@@ -281,8 +287,8 @@ namespace Stats
 					++c.stealthKos;
 					++totalStealthKOs;
 				}
-				if (!t.race.empty()) ++kosByRace[t.race];
-				if (!t.faction.empty()) ++kosByFaction[t.faction];
+				if (!t.race.empty()) { ++kosByRace[t.race]; ++c.raceKOs[t.race]; }
+				if (!t.faction.empty()) { ++kosByFaction[t.faction]; ++c.factionKOs[t.faction]; }
 				if (!t.npc.empty()) ++kosByNpc[t.npc];
 			}
 			if (t.time >= 0)
@@ -520,6 +526,32 @@ namespace Stats
 		return out;
 	}
 
+	namespace
+	{
+		void exportVictims(std::map<std::string, int>& ints, const char* prefix, const std::string& key,
+			const std::map<std::string, int>& m)
+		{
+			for (std::map<std::string, int>::const_iterator it = m.begin(); it != m.end(); ++it)
+				ints[prefix + key + "|" + it->first] = it->second;
+		}
+
+		// "<chave>|<nome>" -> soma em chars[chave].<campo>[nome]. false se não tiver '|'.
+		bool importVictim(const std::string& rest, int v, std::map<std::string, int> CharStats::* field)
+		{
+			size_t bar = rest.find('|');
+			if (bar == std::string::npos)
+				return false;
+			(chars[rest.substr(0, bar)].*field)[rest.substr(bar + 1)] += v;
+			return true;
+		}
+
+		void addAll(std::map<std::string, int>& to, const std::map<std::string, int>& from)
+		{
+			for (std::map<std::string, int>::const_iterator it = from.begin(); it != from.end(); ++it)
+				to[it->first] += it->second;
+		}
+	}
+
 	void exportTo(std::map<std::string, int>& ints, std::map<std::string, std::string>& strs)
 	{
 		ints["total.k"] = totalKills;
@@ -535,6 +567,10 @@ namespace Stats
 			strs[P_CHAR_NAME + it->first] = it->second.name;
 			if (!it->second.race.empty())
 				strs[P_CHAR_RACE + it->first] = it->second.race;
+			exportVictims(ints, P_CHAR_RACE_KILLS, it->first, it->second.raceKills);
+			exportVictims(ints, P_CHAR_RACE_KOS, it->first, it->second.raceKOs);
+			exportVictims(ints, P_CHAR_FACTION_KILLS, it->first, it->second.factionKills);
+			exportVictims(ints, P_CHAR_FACTION_KOS, it->first, it->second.factionKOs);
 		}
 		std::map<std::string, int>::const_iterator i;
 		for (i = killsByRace.begin(); i != killsByRace.end(); ++i) ints[P_RACE_KILLS + i->first] = i->second;
@@ -589,6 +625,10 @@ namespace Stats
 			else if (startsWith(k, P_BURST_KILLS, rest)) bestBurstKills[atoi(rest.c_str())] = v;
 			else if (startsWith(k, P_BURST_TAKEDOWNS, rest)) bestBurstTakedowns[atoi(rest.c_str())] = v;
 			else if (startsWith(k, P_UNLOCKED, rest)) unlocked.insert(rest);
+			else if (startsWith(k, P_CHAR_RACE_KILLS, rest)) importVictim(rest, v, &CharStats::raceKills);
+			else if (startsWith(k, P_CHAR_RACE_KOS, rest)) importVictim(rest, v, &CharStats::raceKOs);
+			else if (startsWith(k, P_CHAR_FACTION_KILLS, rest)) importVictim(rest, v, &CharStats::factionKills);
+			else if (startsWith(k, P_CHAR_FACTION_KOS, rest)) importVictim(rest, v, &CharStats::factionKOs);
 		}
 		for (std::map<std::string, std::string>::const_iterator it = strs.begin(); it != strs.end(); ++it)
 		{
@@ -730,6 +770,10 @@ namespace Stats
 		t.kos += moved.kos;
 		t.stealthKos += moved.stealthKos;
 		t.limbs += moved.limbs;
+		addAll(t.raceKills, moved.raceKills);
+		addAll(t.raceKOs, moved.raceKOs);
+		addAll(t.factionKills, moved.factionKills);
+		addAll(t.factionKOs, moved.factionKOs);
 		for (size_t i = 0; i < fallen.size(); ++i)
 			if (fallen[i].key == from)
 				fallen[i].key = to;
@@ -814,6 +858,106 @@ namespace Stats
 			if (!killsByFaction.empty())
 				writeTop(o, Lang::tr("stats.victims_faction", "Factions:"), killsByFaction, limit);
 		}
+		return o.str();
+	}
+
+	namespace
+	{
+		bool byVictimKills(const VictimRow& a, const VictimRow& b)
+		{
+			if (a.kills != b.kills) return a.kills > b.kills;
+			if (a.kos != b.kos) return a.kos > b.kos;
+			return a.name < b.name;
+		}
+
+		std::vector<VictimRow> mergeVictims(const std::map<std::string, int>& kills, const std::map<std::string, int>& kos)
+		{
+			std::map<std::string, VictimRow> m;
+			std::map<std::string, int>::const_iterator it;
+			for (it = kills.begin(); it != kills.end(); ++it)
+			{
+				m[it->first].name = it->first;
+				m[it->first].kills = it->second;
+			}
+			for (it = kos.begin(); it != kos.end(); ++it)
+			{
+				m[it->first].name = it->first;
+				m[it->first].kos = it->second;
+			}
+			std::vector<VictimRow> rows;
+			for (std::map<std::string, VictimRow>::const_iterator r = m.begin(); r != m.end(); ++r)
+				rows.push_back(r->second);
+			std::sort(rows.begin(), rows.end(), byVictimKills);
+			return rows;
+		}
+
+		// Campo de CSV: entre aspas se tiver vírgula, aspas ou quebra de linha.
+		std::string csv(const std::string& s)
+		{
+			if (s.find_first_of(",\"\n") == std::string::npos)
+				return s;
+			std::string out = "\"";
+			for (size_t i = 0; i < s.size(); ++i)
+			{
+				if (s[i] == '"')
+					out += '"';
+				out += s[i];
+			}
+			return out + "\"";
+		}
+
+		void writeVictimsText(std::ostringstream& o, const std::string& label, const std::vector<VictimRow>& rows)
+		{
+			o << "   " << label << "\n";
+			for (size_t i = 0; i < rows.size(); ++i)
+				o << "      " << rows[i].name << "  " << rows[i].kills << " / " << rows[i].kos << "\n";
+		}
+	}
+
+	std::vector<VictimRow> victimRows(bool factions, const std::string& key)
+	{
+		if (key.empty())
+			return factions ? mergeVictims(killsByFaction, kosByFaction) : mergeVictims(killsByRace, kosByRace);
+		std::map<std::string, CharStats>::const_iterator it = chars.find(key);
+		if (it == chars.end())
+			return std::vector<VictimRow>();
+		const CharStats& c = it->second;
+		return factions ? mergeVictims(c.factionKills, c.factionKOs) : mergeVictims(c.raceKills, c.raceKOs);
+	}
+
+	std::string exportText(const std::string& selectedKey, const std::string& selectedName)
+	{
+		std::ostringstream o;
+		o << Lang::tr("panel.title", "Kills & Achievements") << "\n\n";
+		o << statsReport(selectedKey, selectedName, true);
+		o << "\n" << Lang::tr("export.victims", "--- Victims (kills / KOs) ---") << "\n";
+		writeVictimsText(o, Lang::tr("stats.victims_race", "Races:"), victimRows(false));
+		writeVictimsText(o, Lang::tr("stats.victims_faction", "Factions:"), victimRows(true));
+		o << "\n" << achievementsReport();
+		o << "\n" << memorialReport();
+		return o.str();
+	}
+
+	std::string exportCsv()
+	{
+		std::ostringstream o;
+		o << "type,name,race,kills,kos,stealth_kos,limbs\n";
+		std::vector<std::pair<CharStats, std::string> > list;
+		for (std::map<std::string, CharStats>::const_iterator it = chars.begin(); it != chars.end(); ++it)
+			list.push_back(std::make_pair(it->second, it->first));
+		std::sort(list.begin(), list.end(), byKillsDescPair);
+		for (size_t i = 0; i < list.size(); ++i)
+		{
+			const CharStats& c = list[i].first;
+			o << (isFallen(list[i].second) ? "fallen" : "character") << "," << csv(c.name) << "," << csv(c.race) << ","
+				<< c.kills << "," << c.kos << "," << c.stealthKos << "," << c.limbs << "\n";
+		}
+		std::vector<VictimRow> rows = victimRows(false);
+		for (size_t i = 0; i < rows.size(); ++i)
+			o << "victim_race," << csv(rows[i].name) << ",," << rows[i].kills << "," << rows[i].kos << ",,\n";
+		rows = victimRows(true);
+		for (size_t i = 0; i < rows.size(); ++i)
+			o << "victim_faction," << csv(rows[i].name) << ",," << rows[i].kills << "," << rows[i].kos << ",,\n";
 		return o.str();
 	}
 

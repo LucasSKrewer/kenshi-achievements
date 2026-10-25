@@ -2,6 +2,22 @@
 
 All notable changes to Kenshi Achievements. Versions follow [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+- **Victims tab** in the F6 panel ([#34](https://github.com/LucasSKrewer/kenshi-achievements/issues/34),
+  suggested by @az455862): two sortable tables, races and factions, with kills and KOs, always the full list.
+- **Victims per character** ([#28](https://github.com/LucasSKrewer/kenshi-achievements/issues/28)): the Victims
+  tab switches between the whole squad and the selected character. Counted from this version on.
+- **Export** button ([#27](https://github.com/LucasSKrewer/kenshi-achievements/issues/27)): writes
+  `exports/stats-<date>.txt` (everything in the panel) and `.csv` (one line per character, race and faction)
+  in the mod folder.
+
+### Fixed
+- A kill wasn't counted when you saved while the victim was down and loaded that save before it bled out
+  ([#36](https://github.com/LucasSKrewer/kenshi-achievements/issues/36), reported by @az455862). Who knocked
+  each victim down is now stored in the save.
+
 ## [1.4.1] — 2026-10-18
 
 ### Fixed

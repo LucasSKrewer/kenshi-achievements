@@ -384,6 +384,49 @@ int main(int argc, char** argv)
 		Stats::reset();
 	}
 
+	// #34/#28: vítimas do grupo e por personagem, que sobrevivem ao save/load e à junção de handles
+	{
+		Stats::reset();
+		Stats::recordKill("h1", "Fuu", "Greenlander", "Shek", "Shek Kingdom");
+		Stats::recordKill("h1", "Fuu", "Greenlander", "Shek", "Shek Kingdom");
+		Stats::recordKO("h1", "Fuu", "Greenlander", "Greenlander", "Dust Bandits");
+		Stats::recordKill("h2", "Brooke", "Shek", "Greenlander", "Dust Bandits");
+		Stats::popUnlocks();
+
+		std::vector<Stats::VictimRow> v = Stats::victimRows(false);
+		check(v.size() == 2 && v[0].name == "Shek" && v[0].kills == 2 && v[1].name == "Greenlander" && v[1].kills == 1 && v[1].kos == 1,
+			"vítimas do grupo por raça: kills e KOs juntos, por kills");
+		v = Stats::victimRows(true, "h1");
+		check(v.size() == 2 && v[0].name == "Shek Kingdom" && v[0].kills == 2 && v[1].name == "Dust Bandits" && v[1].kos == 1,
+			"vítimas da Fuu por facção");
+		check(Stats::victimRows(false, "h2").size() == 1 && Stats::victimRows(false, "nao_existe").empty(),
+			"Brooke só tem a dela; personagem desconhecido = vazio");
+
+		std::map<std::string, int> ints;
+		std::map<std::string, std::string> strs;
+		Stats::exportTo(ints, strs);
+		check(ints["c.rk:h1|Shek"] == 2 && ints["c.fo:h1|Dust Bandits"] == 1, "vai pro save como c.rk:/c.fo:<chave>|<nome>");
+		Stats::importFrom(ints, strs);
+		v = Stats::victimRows(false, "h1");
+		check(v.size() == 2 && v[0].kills == 2 && v[1].kos == 1, "volta do save igual");
+
+		Stats::mergeCharacter("h2", "h1");
+		v = Stats::victimRows(false, "h1");
+		check(v.size() == 2 && v[0].kills == 2 && v[1].name == "Greenlander" && v[1].kills == 1 && v[1].kos == 1,
+			"juntar personagem soma as vítimas");
+
+		std::string c = Stats::exportCsv();
+		check(c.find("type,name,race,kills,kos,stealth_kos,limbs\n") == 0, "CSV começa pelo cabeçalho");
+		check(c.find("character,Fuu,Greenlander,3,1,0,0\n") != std::string::npos, "CSV: linha do personagem");
+		check(c.find("victim_faction,Shek Kingdom,,2,0,,\n") != std::string::npos, "CSV: linha de facção");
+		Stats::recordKill("h3", "Beep, the \"Hiver\"", "Hive Prince", "Shek", "Shek Kingdom");
+		check(Stats::exportCsv().find("\"Beep, the \"\"Hiver\"\"\"") != std::string::npos, "CSV: vírgula e aspas escapadas");
+		std::string t = Stats::exportText("h1", "Fuu");
+		check(t.find("--- Total do grupo ---") != std::string::npos && t.find("      Shek  3 / 0\n") != std::string::npos,
+			"texto exportado tem total e vítimas");
+		Stats::reset();
+	}
+
 	printf("\n%s (%d falha(s))\n", falhas ? "FALHOU" : "TUDO OK", falhas);
 	return falhas ? 1 : 0;
 }

@@ -4,6 +4,19 @@ panel.title = Kills & Conquistas
 tab.stats = Estatísticas
 tab.achievements = Conquistas
 tab.memorial = Memorial
+tab.victims = Vítimas
+
+victims.squad = Grupo todo
+victims.selected = Selecionado: {name}
+victims.selected_none = Personagem selecionado
+victims.title_squad = Vítimas do grupo todo (kills / KOs)
+victims.title_char = Vítimas de {name} (kills / KOs)
+victims.since = contadas a partir da v1.5.0
+
+export.button = Exportar
+export.done = Estatísticas exportadas para {path}
+export.failed = Não deu pra gravar {path}
+export.victims = --- Vítimas (kills / KOs) ---
 
 stats.line = Kills: {kills}    KOs: {kos}    Membros: {limbs}
 stats.stealth = Nocautes furtivos: {n}
@@ -22,6 +35,8 @@ table.kills = Kills
 table.kos = KOs
 table.stealth = Furtivos
 table.limbs = Membros
+table.race = Raça
+table.faction = Facção
 
 mem.none = (ninguém caiu)
 mem.by = Morto por {killer}

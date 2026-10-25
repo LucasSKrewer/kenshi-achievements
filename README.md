@@ -25,11 +25,15 @@ An [RE_Kenshi](https://github.com/BFrizzleFoShizzle/RE_Kenshi) plugin that count
   Achievements for content you don't have installed are hidden.
 - When an achievement unlocks you get a popup at the top of the screen, a line in the message log and
   a sound.
-- **F6** opens and closes the panel (change the key with `@key`). It has three tabs:
+- **F6** opens and closes the panel (change the key with `@key`). It has four tabs:
   - **Statistics**: the selected character, the squad total and the most frequent victims at the top,
     and a **per-character table** (Kills, KOs, Stealth, Limbs) below it. Click a column header to sort.
   - **Achievements**: grouped by category, done and in progress, with progress like `(3/10)`.
   - **Memorial**: the squad members who died, who killed them, on which day, and what they had done.
+  - **Victims**: every race and faction you've killed or knocked out, in two sortable tables, for the
+    whole squad or just the selected character.
+- **Export** button: writes everything to `exports/stats-<date>.txt` and `.csv` (opens in Excel) in the
+  mod folder.
 - The counters live **inside your save** (in a `GameData` record of the mod's own type, `4242`), so
   every save has its own. Saves from before the mod load fine, and counting starts from then on.
 - **Everything is configurable** in `achievements.txt`, without recompiling (see

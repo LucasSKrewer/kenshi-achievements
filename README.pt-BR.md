@@ -11,10 +11,12 @@ feitos pelo seu grupo e libera **conquistas** configuráveis. Só single-player.
 - 68 conquistas: marcos de kills/KOs, sequências ("5 kills em um minuto"), facções e criaturas, chefes (NPCs únicos) e conteúdo do Genesis. As de conteúdo que você não tem ficam ocultas.
 - Os contadores ficam **dentro do save** (um `GameData` próprio, tipo `4242`); cada save tem os seus.
 - Conquista liberada → janela no topo da tela + linha no log de mensagens + som.
-- **F6** abre/fecha o painel (tecla configurável com `@key`), com três abas:
+- **F6** abre/fecha o painel (tecla configurável com `@key`), com quatro abas:
   - **Estatísticas** — o personagem selecionado, o total do grupo e as vítimas mais frequentes em cima, e uma **tabela por personagem** (Kills, KOs, Furtivos, Membros) embaixo, ordenável clicando no cabeçalho;
   - **Conquistas** — por categoria, concluídas e em andamento, com progresso (ex.: `(3/10)`);
-  - **Memorial** — quem do grupo morreu, quem matou, em que dia e o que tinha feito.
+  - **Memorial** — quem do grupo morreu, quem matou, em que dia e o que tinha feito;
+  - **Vítimas** — todas as raças e facções que o grupo matou ou nocauteou, em duas tabelas ordenáveis, do grupo todo ou só do personagem selecionado.
+- Botão **Exportar**: grava tudo em `exports/stats-<data>.txt` e `.csv` (abre no Excel) na pasta do mod.
 - Conquistas em `mod/KenshiAchievements/achievements.txt` — formato explicado no próprio arquivo.
 - Som configurável (`@sound`): padrão é a notificação "construção concluída" do próprio Kenshi; dá pra usar outro som do jogo, o `achievement.wav` incluso ou qualquer `.wav` seu.
 

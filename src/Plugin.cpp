@@ -67,7 +67,7 @@ namespace
 
 	const DWORD HIT_MEMORY_MS = 30000;  // quanto tempo um golpe do jogador vale para autoria
 	const DWORD TOAST_MS = 6000;
-	const char* const VERSION = "1.4.1";
+	const char* const VERSION = "1.5.0";
 	double gameClock = 0.0; // segundos de jogo (ver tickGameClock)
 	DWORD lastReconcile = 0; // ver reconcileCharacters
 	bool reconciledOnce = false;

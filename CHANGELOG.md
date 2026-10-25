@@ -2,7 +2,7 @@
 
 All notable changes to Kenshi Achievements. Versions follow [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [1.5.0] — 2026-10-25
 
 ### Added
 - **Victims tab** in the F6 panel ([#34](https://github.com/LucasSKrewer/kenshi-achievements/issues/34),
@@ -179,6 +179,7 @@ and [GitHub release](https://github.com/LucasSKrewer/kenshi-achievements/release
 - Tested with Genesis and a typical Workshop mod list. The mod doesn't change game data, so load
   order doesn't matter.
 
+[1.5.0]: https://github.com/LucasSKrewer/kenshi-achievements/releases/tag/v1.5.0
 [1.4.1]: https://github.com/LucasSKrewer/kenshi-achievements/releases/tag/v1.4.1
 [1.4.0]: https://github.com/LucasSKrewer/kenshi-achievements/releases/tag/v1.4.0
 [1.3.0]: https://github.com/LucasSKrewer/kenshi-achievements/releases/tag/v1.3.0

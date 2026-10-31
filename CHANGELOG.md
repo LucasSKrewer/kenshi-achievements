@@ -2,7 +2,7 @@
 
 All notable changes to Kenshi Achievements. Versions follow [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [1.5.1] — 2026-10-30
 
 ### Fixed
 - All counters were reset after **importing** a game (main menu → Import)
@@ -188,6 +188,7 @@ and [GitHub release](https://github.com/LucasSKrewer/kenshi-achievements/release
 - Tested with Genesis and a typical Workshop mod list. The mod doesn't change game data, so load
   order doesn't matter.
 
+[1.5.1]: https://github.com/LucasSKrewer/kenshi-achievements/releases/tag/v1.5.1
 [1.5.0]: https://github.com/LucasSKrewer/kenshi-achievements/releases/tag/v1.5.0
 [1.4.1]: https://github.com/LucasSKrewer/kenshi-achievements/releases/tag/v1.4.1
 [1.4.0]: https://github.com/LucasSKrewer/kenshi-achievements/releases/tag/v1.4.0

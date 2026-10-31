@@ -1,6 +1,7 @@
 // Teste da lógica sem o jogo: Lang (dicionário .po + textos) e Stats (contagem, conquistas, abas).
 // Compilar/rodar: powershell -File tests\rodar-testes.ps1
 #include "../src/Lang.h"
+#include "../src/SaveFile.h"
 #include "../src/Stats.h"
 
 #include <cstdio>
@@ -425,6 +426,60 @@ int main(int argc, char** argv)
 		check(t.find("--- Total do grupo ---") != std::string::npos && t.find("      Shek  3 / 0\n") != std::string::npos,
 			"texto exportado tem total e vítimas");
 		Stats::reset();
+	}
+
+	// #37: ler o registro do mod direto de um quick.save (Import do Kenshi não traz o registro)
+	{
+		// Arquivo sintético: lixo, uma ocorrência solta do SID (não é registro), depois o registro de verdade
+		std::string f;
+		struct W
+		{
+			static void i(std::string& s, int v) { s.append((const char*)&v, 4); }
+			static void str(std::string& s, const std::string& v) { i(s, (int)v.size()); s += v; }
+		};
+		f += "lixo";
+		W::str(f, "KenshiAchievements_stats"); // solta
+		W::i(f, 4242); W::i(f, 77); W::str(f, "Kenshi Achievements"); W::str(f, "KenshiAchievements_stats");
+		W::i(f, 0);                                           // flags
+		W::i(f, 1); W::str(f, "b"); f += '\x01';              // 1 bool
+		W::i(f, 0);                                           // floats
+		W::i(f, 2); W::str(f, "total.k"); W::i(f, 12); W::str(f, "c.k:h1"); W::i(f, 5);
+		W::i(f, 0); W::i(f, 0);                               // vec3, vec4
+		W::i(f, 1); W::str(f, "c.n:h1"); W::str(f, "Fuu");
+		W::i(f, 0); W::i(f, 0);                               // files, refs
+		std::string path = "build\\tests\\fake.save";
+		FILE* out = fopen(path.c_str(), "wb");
+		fwrite(f.data(), 1, f.size(), out);
+		fclose(out);
+
+		std::map<std::string, int> ints;
+		std::map<std::string, std::string> strs;
+		std::string err;
+		bool ok = SaveFile::readRecord(path, 4242, "KenshiAchievements_stats", ints, strs, err);
+		check(ok && ints["total.k"] == 12 && ints["c.k:h1"] == 5 && strs["c.n:h1"] == "Fuu",
+			"lê o registro sintético, pulando a ocorrência solta do SID");
+		check(!SaveFile::readRecord(path, 4242, "OutroMod_stats", ints, strs, err) && !err.empty(), "SID ausente = erro");
+
+		// Truncado no meio dos ints
+		out = fopen(path.c_str(), "wb");
+		fwrite(f.data(), 1, f.size() - 40, out);
+		fclose(out);
+		check(!SaveFile::readRecord(path, 4242, "KenshiAchievements_stats", ints, strs, err), "registro truncado = erro, sem estourar");
+
+		// Save de verdade, se houver (o do teste no jogo)
+		std::string real = game + "save\\testess\\quick.save";
+		FILE* probe = fopen(real.c_str(), "rb");
+		if (probe)
+		{
+			fclose(probe);
+			ok = SaveFile::readRecord(real, 4242, "KenshiAchievements_stats", ints, strs, err);
+			printf("  save real: %s, %d ints, %d textos, total.k=%d\n", ok ? "lido" : err.c_str(), (int)ints.size(),
+				(int)strs.size(), ints["total.k"]);
+			check(ok && ints["total.k"] > 0 && !strs.empty(), "lê os contadores de um quick.save de verdade");
+			Stats::importFrom(ints, strs);
+			check(!Stats::characterRows().empty(), "e eles entram nas estatísticas");
+			Stats::reset();
+		}
 	}
 
 	printf("\n%s (%d falha(s))\n", falhas ? "FALHOU" : "TUDO OK", falhas);

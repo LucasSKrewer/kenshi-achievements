@@ -2,6 +2,15 @@
 
 All notable changes to Kenshi Achievements. Versions follow [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Fixed
+- All counters were reset after **importing** a game (main menu → Import)
+  ([#37](https://github.com/LucasSKrewer/kenshi-achievements/issues/37), reported by Kiana in the Workshop
+  comments). Import builds a new world and doesn't carry the mod's data, so the mod now reads the counters
+  straight from the imported save's `quick.save`. Works with saves from earlier versions too. Characters are
+  matched in the new world by name and race.
+
 ## [1.5.0] — 2026-10-25
 
 ### Added

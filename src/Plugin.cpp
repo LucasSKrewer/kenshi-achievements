@@ -13,6 +13,7 @@
 //   GameWorld::mainLoop_GPUSensitiveStuff -> UI (MyGUI só pode ser tocado nessa thread)
 
 #include "Lang.h"
+#include "SaveFile.h"
 #include "Stats.h"
 
 #include <Debug.h>
@@ -30,6 +31,7 @@
 #include <kenshi/MedicalSystem.h>
 #include <kenshi/PlayerInterface.h>
 #include <kenshi/RaceData.h>
+#include <kenshi/SaveInfo.h>
 #include <kenshi/SaveManager.h>
 #include <kenshi/Tasker.h>
 #include <kenshi/gui/ManagementScreen.h>
@@ -746,6 +748,69 @@ namespace
 		saveGameState_orig(self, container);
 	}
 
+	// Import (#37): o Kenshi cria um mundo novo e traz personagens/construções do save escolhido, mas não o
+	// registro do mod. Guardamos o quick.save importado e lemos os contadores direto dele. Fica valendo até
+	// o jogo rodar (o import pode passar por newGame e por loadAllPlatoons, e os dois zeram tudo antes).
+	std::string pendingImport;
+	DWORD pendingImportTick = 0;
+	const DWORD IMPORT_VALID_MS = 10 * 60 * 1000; // o mundo novo do import pode demorar a gerar
+
+	bool loadFromImportedSave()
+	{
+		if (pendingImport.empty())
+			return false;
+		if (GetTickCount() - pendingImportTick > IMPORT_VALID_MS)
+		{
+			pendingImport.clear(); // velho: não é o carregamento desse import
+			return false;
+		}
+		std::map<std::string, int> ints;
+		std::map<std::string, std::string> strs;
+		std::string error;
+		if (!SaveFile::readRecord(pendingImport, SAVE_ITEM_TYPE, SAVE_SID, ints, strs, error))
+		{
+			DebugLog("KenshiAchievements: import sem contadores (" + error + ")");
+			return false;
+		}
+		boost::lock_guard<boost::mutex> g(lock);
+		Stats::importFrom(ints, strs);
+		// Não traz quem derrubou cada vítima: no mundo novo esses NPCs são outros. Os personagens ganham
+		// handle novo; a conferência (reconcileCharacters) junta cada entrada com quem tem nome e raça iguais.
+		lastReconcile = GetTickCount();
+		reconciledOnce = false;
+		DebugLog("KenshiAchievements: contadores trazidos do save importado " + pendingImport);
+		return true;
+	}
+
+	void (*import_orig)(SaveManager*, const SaveInfo&, int) = NULL;
+	void import_hook(SaveManager* self, const SaveInfo& s, int flags)
+	{
+		// location/name variam entre versões; fica com o primeiro caminho que existir
+		std::string base = s.location;
+		if (!base.empty() && base[base.size() - 1] != '\\' && base[base.size() - 1] != '/')
+			base += "\\";
+		std::string candidates[] = {
+			base + s.name + "\\quick.save",
+			self->getSavePath() + s.name + "\\quick.save",
+			self->getSavePath() + "\\" + s.name + "\\quick.save",
+		};
+		pendingImport.clear();
+		pendingImportTick = GetTickCount();
+		for (int i = 0; i < 3; ++i)
+		{
+			if (GetFileAttributesA(candidates[i].c_str()) != INVALID_FILE_ATTRIBUTES)
+			{
+				pendingImport = candidates[i];
+				break;
+			}
+		}
+		std::ostringstream o;
+		o << "KenshiAchievements: import de '" << s.name << "' (location '" << s.location << "', flags " << flags << ") -> "
+			<< (pendingImport.empty() ? "quick.save não encontrado" : pendingImport);
+		DebugLog(o.str());
+		import_orig(self, s, flags);
+	}
+
 	void (*loadAllPlatoons_orig)(GameWorld*) = NULL;
 	void loadAllPlatoons_hook(GameWorld* self)
 	{
@@ -755,9 +820,11 @@ namespace
 		auto it = ou->savedata.gamedataSID.find(SAVE_SID);
 		if (it == ou->savedata.gamedataSID.end() || !it->second)
 		{
-			DebugLog("KenshiAchievements: save sem contadores (save novo ou anterior ao mod)");
+			if (!loadFromImportedSave())
+				DebugLog("KenshiAchievements: save sem contadores (save novo ou anterior ao mod)");
 			return;
 		}
+		pendingImport.clear(); // carregamento normal de um save com contadores: não é import
 
 		std::map<std::string, int> ints;
 		std::map<std::string, std::string> strs;
@@ -783,6 +850,7 @@ namespace
 	{
 		resetAll();
 		newGame_orig(self, startId);
+		loadFromImportedSave(); // import que passa pelo newGame
 	}
 
 	// ---------- UI (thread principal) ----------
@@ -1393,6 +1461,15 @@ namespace
 			dbg("mainLoop ativo (UI ok)");
 		}
 
+		// Import (#37): o Kenshi não passa por loadAllPlatoons nem newGame ao importar (visto no log), então
+		// os contadores do save importado entram no primeiro frame do mundo novo
+		if (!pendingImport.empty() && ou && ou->player)
+		{
+			resetAll();
+			loadFromImportedSave();
+			pendingImport.clear();
+		}
+
 		tickGameClock();
 		reconcileCharacters();
 		resolvePendingKOs();
@@ -1546,5 +1623,6 @@ __declspec(dllexport) void startPlugin()
 	HOOK(&FactionManager::saveGameState, &saveGameState_hook, &saveGameState_orig);
 	HOOK(&GameWorld::loadAllPlatoons, &loadAllPlatoons_hook, &loadAllPlatoons_orig);
 	HOOK(&SaveManager::newGame, &newGame_hook, &newGame_orig);
+	HOOK(&SaveManager::import, &import_hook, &import_orig);
 	HOOK(&GameWorld::_NV_mainLoop_GPUSensitiveStuff, &mainLoop_hook, &mainLoop_orig);
 }

@@ -12,7 +12,7 @@ $env:LIB     = "$VcDir\lib\amd64;$VcDir\sdk\lib\x64"
 Push-Location $root
 try {
     & cl.exe /nologo /EHsc /O2 /MD "/Fo$out\\" "/Fe$out\teste_logica.exe" `
-        tests\teste_logica.cpp src\Lang.cpp src\Stats.cpp
+        tests\teste_logica.cpp src\Lang.cpp src\Stats.cpp src\SaveFile.cpp
     if ($LASTEXITCODE -ne 0) { throw "Compilação dos testes falhou" }
     # O console do Windows precisa de UTF-8 pra mostrar os acentos
     [Console]::OutputEncoding = [Text.Encoding]::UTF8

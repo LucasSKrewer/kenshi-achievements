@@ -40,6 +40,18 @@ int main(int argc, char** argv)
 	check(Lang::toEnglish("Skeleton Screamer MKII") == "Skeleton Screamer MKII", "nome do Genesis sem tradução passa direto");
 	printf("  Nação Sagrada? -> '%s'\n", Lang::toEnglish("Nação Sagrada").c_str());
 
+	// ru_RU (#38): .po sem msgctxt, contexto em "#. Type:" / "#. Name:"
+	int ru = Lang::loadGameNames(game + "locale\\ru_RU\\gamedata.po");
+	printf("nomes mapeados (ru_RU): %d\n", ru);
+	check(ru > 100, "ru_RU: carregou nomes sem msgctxt");
+	check(Lang::toEnglish("Голодные бандиты") == "Starving Bandits", "Голодные бандиты -> Starving Bandits");
+	check(Lang::toEnglish("Пыльные бандиты") == "Dust Bandits", "Пыльные бандиты -> Dust Bandits");
+	// O Kenshi corta chave de save > 64 bytes em 63, às vezes no meio de uma letra de 2 bytes
+	check(Lang::fromSave(std::string("Голодные банд") + "\xD0", true) == "Starving Bandits", "nome cortado no meio da letra -> Starving Bandits");
+	check(Lang::fromSave("Пыльные бандиты", false) == "Dust Bandits", "fromSave sem corte = toEnglish");
+	check(Lang::fromSave("Голодные бандиты", true) == "Starving Bandits", "chave de 63 bytes inteira continua certa");
+	Lang::loadGameNames(game + "locale\\pt_BR\\gamedata.po"); // o resto dos testes usa pt_BR
+
 	// Textos do mod
 	std::string used = Lang::loadTexts(mod, "pt_BR");
 	check(used == "pt_BR", "carregou lang/pt_BR.txt");

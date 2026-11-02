@@ -2,6 +2,22 @@
 
 All notable changes to Kenshi Achievements. Versions follow [Semantic Versioning](https://semver.org/).
 
+## [1.5.2] — 2026-11-01
+
+### Fixed
+- **Old saves crashing on load** (`STATUS_STACK_BUFFER_OVERRUN`)
+  ([#38](https://github.com/LucasSKrewer/kenshi-achievements/issues/38)), reported with a full WinDbg
+  analysis by Phlegmatik Mirolybivy. Kenshi reads every counter name in a 64-byte buffer and
+  writes one byte past it when a name is exactly 64 bytes long (longer ones are cut to 63). Translated
+  faction names (Russian uses 2 bytes per letter) reached that size. The mod now saves long names through
+  a short index, and patches that off-by-one in Kenshi's save reader in memory so saves that already have
+  a 64-byte name load again. The patch is applied only if the exact code is found; the log says
+  `patched Kenshi's 64-byte save key overflow`.
+- **Russian names were never mapped back to English**, so race/faction achievements and the Victims tab
+  used Russian names. The `ru_RU` translation file has no `msgctxt` lines (the type and name come in
+  comments) and the mod skipped every entry. Saves with Russian names are converted on load, including
+  names Kenshi had cut short.
+
 ## [1.5.1] — 2026-10-30
 
 ### Fixed

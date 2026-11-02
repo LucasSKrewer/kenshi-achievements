@@ -27,4 +27,9 @@ namespace Lang
 
 	// Nome de raça/facção em inglês (se veio traduzido), senão o próprio nome.
 	std::string toEnglish(const std::string& name);
+
+	// Nome lido de uma chave do save, em inglês. `cut`: a chave tinha 63 bytes, o Kenshi pode ter
+	// cortado o fim (até 1.5.1 as chaves passavam disso). Tira o pedaço de letra UTF-8 que sobrou e, se
+	// um único nome conhecido começa com o resto, fica com ele.
+	std::string fromSave(const std::string& name, bool cut);
 }

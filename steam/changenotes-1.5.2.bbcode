@@ -1,0 +1,6 @@
+[b]v1.5.2 — Old saves load again[/b]
+[list]
+[*][b]Fixed:[/b] some older saves crashed the game on load (STATUS_STACK_BUFFER_OVERRUN), mostly with Russian localization. Kenshi can't read a counter name exactly 64 bytes long; the mod no longer writes one, and fixes that Kenshi bug in memory so saves that already have one load again. Reported with a full WinDbg analysis by Phlegmatik Mirolybivy.
+[*][b]Fixed:[/b] Russian race and faction names are now mapped back to English, so those achievements count in Russian too. Old saves are converted on load.
+[/list]
+Requires RE_Kenshi v0.3.5+. Full changelog: [url=https://github.com/LucasSKrewer/kenshi-achievements/blob/main/CHANGELOG.md]GitHub[/url]

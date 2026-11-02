@@ -69,7 +69,7 @@ namespace
 
 	const DWORD HIT_MEMORY_MS = 30000;  // quanto tempo um golpe do jogador vale para autoria
 	const DWORD TOAST_MS = 6000;
-	const char* const VERSION = "1.5.1";
+	const char* const VERSION = "1.5.2";
 	double gameClock = 0.0; // segundos de jogo (ver tickGameClock)
 	DWORD lastReconcile = 0; // ver reconcileCharacters
 	bool reconciledOnce = false;
@@ -719,6 +719,100 @@ namespace
 
 	// ---------- save / load ----------
 
+	// O Kenshi lê cada chave das listas do GameData num buffer de 64 bytes na pilha: chave de 64 bytes
+	// escreve o \0 um byte além e derruba o jogo ao carregar (STATUS_STACK_BUFFER_OVERRUN), e acima
+	// disso ele corta em 63. Nomes traduzidos (russo, 2 bytes por letra) chegam lá. Chave longa vai
+	// então por um índice: ints["~N"] = valor e strs["~N"] = chave inteira (valor de string não tem limite).
+	const size_t MAX_SAVE_KEY = 63;
+	const char* const P_LONG_KEY = "~";
+
+	void fitKeys(std::map<std::string, int>& ints, std::map<std::string, std::string>& strs)
+	{
+		int n = 0;
+		std::map<std::string, int> fitted;
+		for (std::map<std::string, int>::const_iterator it = ints.begin(); it != ints.end(); ++it)
+		{
+			if (it->first.size() <= MAX_SAVE_KEY)
+			{
+				fitted[it->first] = it->second;
+				continue;
+			}
+			std::ostringstream k;
+			k << P_LONG_KEY << n++;
+			fitted[k.str()] = it->second;
+			strs[k.str()] = it->first;
+		}
+		ints.swap(fitted);
+	}
+
+	void unfitKeys(std::map<std::string, int>& ints, std::map<std::string, std::string>& strs)
+	{
+		std::map<std::string, int> out;
+		for (std::map<std::string, int>::const_iterator it = ints.begin(); it != ints.end(); ++it)
+		{
+			std::map<std::string, std::string>::iterator full = it->first.compare(0, 1, P_LONG_KEY) == 0
+				? strs.find(it->first) : strs.end();
+			out[full == strs.end() ? it->first : full->second] += it->second;
+		}
+		for (std::map<std::string, std::string>::iterator s = strs.begin(); s != strs.end();)
+		{
+			if (s->first.compare(0, 1, P_LONG_KEY) == 0)
+				strs.erase(s++);
+			else
+				++s;
+		}
+		ints.swap(out);
+	}
+
+	// Saves que já têm chave de 64 bytes (versões até 1.5.1) não abrem: corrige o leitor do Kenshi na
+	// memória pra tratar 64 como "longa" (corta em 63 em vez de estourar). Nas 6 listas (bool, float,
+	// int, vec3, vec4, string) o código é o mesmo:
+	//   83 FA 40 76 xx          cmp edx, 40h / jbe curta   -> jb (72)
+	//   41 B8 40 00 00 00       mov r8d, 40h
+	//   48 8D 55 D7             lea rdx, [rbp-29h]
+	// Só mexe se achar exatamente as 6, senão é outra versão do jogo e não toca em nada.
+	void patchSaveKeyReader()
+	{
+		static const unsigned char tail[] = { 0x41, 0xB8, 0x40, 0x00, 0x00, 0x00, 0x48, 0x8D, 0x55, 0xD7 };
+		unsigned char* base = (unsigned char*)GetModuleHandleA(NULL);
+		IMAGE_NT_HEADERS* nt = (IMAGE_NT_HEADERS*)(base + ((IMAGE_DOS_HEADER*)base)->e_lfanew);
+		IMAGE_SECTION_HEADER* sec = IMAGE_FIRST_SECTION(nt);
+		std::vector<unsigned char*> hits;
+		for (int s = 0; s < nt->FileHeader.NumberOfSections; ++s, ++sec)
+		{
+			if (!(sec->Characteristics & IMAGE_SCN_MEM_EXECUTE))
+				continue;
+			unsigned char* p = base + sec->VirtualAddress;
+			size_t size = sec->Misc.VirtualSize;
+			for (size_t i = 5; i + sizeof(tail) <= size; ++i)
+			{
+				if (memcmp(p + i, tail, sizeof(tail)) != 0)
+					continue;
+				unsigned char* jcc = p + i - 2;
+				if (jcc[0] == 0x76 && jcc[-3] == 0x83 && jcc[-2] == 0xFA && jcc[-1] == 0x40)
+					hits.push_back(jcc);
+			}
+		}
+		if (hits.size() != 6)
+		{
+			std::ostringstream o;
+			o << "KenshiAchievements: save key reader not patched (found " << hits.size() << " of 6)";
+			DebugLog(o.str());
+			return;
+		}
+		for (size_t i = 0; i < hits.size(); ++i)
+		{
+			DWORD old = 0;
+			if (VirtualProtect(hits[i], 1, PAGE_EXECUTE_READWRITE, &old))
+			{
+				*hits[i] = 0x72; // jb
+				VirtualProtect(hits[i], 1, old, &old);
+			}
+		}
+		FlushInstructionCache(GetCurrentProcess(), NULL, 0);
+		DebugLog("KenshiAchievements: patched Kenshi's 64-byte save key overflow");
+	}
+
 	void (*saveGameState_orig)(FactionManager*, GameDataContainer*) = NULL;
 	void saveGameState_hook(FactionManager* self, GameDataContainer* container)
 	{
@@ -729,6 +823,7 @@ namespace
 			Stats::exportTo(ints, strs);
 			exportDowners(ints, strs);
 		}
+		fitKeys(ints, strs);
 
 		GameData* d = container->createNewData((itemType)SAVE_ITEM_TYPE, SAVE_SID, "Kenshi Achievements");
 		if (d)
@@ -772,6 +867,7 @@ namespace
 			DebugLog("KenshiAchievements: import sem contadores (" + error + ")");
 			return false;
 		}
+		unfitKeys(ints, strs);
 		boost::lock_guard<boost::mutex> g(lock);
 		Stats::importFrom(ints, strs);
 		// Não traz quem derrubou cada vítima: no mundo novo esses NPCs são outros. Os personagens ganham
@@ -832,6 +928,7 @@ namespace
 			ints[i->first] = i->second;
 		for (auto s = it->second->sdata.begin(); s != it->second->sdata.end(); ++s)
 			strs[s->first] = s->second;
+		unfitKeys(ints, strs);
 
 		boost::lock_guard<boost::mutex> g(lock);
 		Stats::importFrom(ints, strs);
@@ -1614,6 +1711,7 @@ __declspec(dllexport) void startPlugin()
 	o << "KenshiAchievements v" << VERSION << ": " << n << " achievements loaded";
 	DebugLog(o.str());
 
+	patchSaveKeyReader();
 	HOOK(&Character::declareDead, &declareDead_hook, &declareDead_orig);
 	HOOK(&MedicalSystem::knockout, &knockout_hook, &knockout_orig);
 	HOOK(&Character::_NV_hitByMeleeAttack, &hitByMelee_hook, &hitByMelee_orig);

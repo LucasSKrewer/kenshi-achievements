@@ -536,12 +536,12 @@ namespace Stats
 		}
 
 		// "<chave>|<nome>" -> soma em chars[chave].<campo>[nome]. false se não tiver '|'.
-		bool importVictim(const std::string& rest, int v, std::map<std::string, int> CharStats::* field)
+		bool importVictim(const std::string& rest, int v, std::map<std::string, int> CharStats::* field, bool cut)
 		{
 			size_t bar = rest.find('|');
 			if (bar == std::string::npos)
 				return false;
-			(chars[rest.substr(0, bar)].*field)[rest.substr(bar + 1)] += v;
+			(chars[rest.substr(0, bar)].*field)[Lang::fromSave(rest.substr(bar + 1), cut)] += v;
 			return true;
 		}
 
@@ -607,6 +607,7 @@ namespace Stats
 			const std::string& k = it->first;
 			int v = it->second;
 			std::string rest;
+			bool cut = k.size() == 63; // o Kenshi pode ter cortado a chave (ver Lang::fromSave)
 			if (k == "total.k") totalKills = v;
 			else if (k == "total.o") totalKOs = v;
 			else if (k == "total.s") totalStealthKOs = v;
@@ -616,19 +617,19 @@ namespace Stats
 			else if (startsWith(k, P_CHAR_STEALTH, rest)) chars[rest].stealthKos = v;
 			else if (startsWith(k, P_CHAR_LIMBS, rest)) chars[rest].limbs = v;
 			// Saves antigos podem ter nomes traduzidos ("Bandidos da Poeira"): leva pro inglês e soma
-			else if (startsWith(k, P_RACE_KILLS, rest)) killsByRace[Lang::toEnglish(rest)] += v;
-			else if (startsWith(k, P_RACE_KOS, rest)) kosByRace[Lang::toEnglish(rest)] += v;
-			else if (startsWith(k, P_FACTION_KILLS, rest)) killsByFaction[Lang::toEnglish(rest)] += v;
-			else if (startsWith(k, P_FACTION_KOS, rest)) kosByFaction[Lang::toEnglish(rest)] += v;
+			else if (startsWith(k, P_RACE_KILLS, rest)) killsByRace[Lang::fromSave(rest, cut)] += v;
+			else if (startsWith(k, P_RACE_KOS, rest)) kosByRace[Lang::fromSave(rest, cut)] += v;
+			else if (startsWith(k, P_FACTION_KILLS, rest)) killsByFaction[Lang::fromSave(rest, cut)] += v;
+			else if (startsWith(k, P_FACTION_KOS, rest)) kosByFaction[Lang::fromSave(rest, cut)] += v;
 			else if (startsWith(k, P_NPC_KILLS, rest)) killsByNpc[rest] += v;
 			else if (startsWith(k, P_NPC_KOS, rest)) kosByNpc[rest] += v;
 			else if (startsWith(k, P_BURST_KILLS, rest)) bestBurstKills[atoi(rest.c_str())] = v;
 			else if (startsWith(k, P_BURST_TAKEDOWNS, rest)) bestBurstTakedowns[atoi(rest.c_str())] = v;
 			else if (startsWith(k, P_UNLOCKED, rest)) unlocked.insert(rest);
-			else if (startsWith(k, P_CHAR_RACE_KILLS, rest)) importVictim(rest, v, &CharStats::raceKills);
-			else if (startsWith(k, P_CHAR_RACE_KOS, rest)) importVictim(rest, v, &CharStats::raceKOs);
-			else if (startsWith(k, P_CHAR_FACTION_KILLS, rest)) importVictim(rest, v, &CharStats::factionKills);
-			else if (startsWith(k, P_CHAR_FACTION_KOS, rest)) importVictim(rest, v, &CharStats::factionKOs);
+			else if (startsWith(k, P_CHAR_RACE_KILLS, rest)) importVictim(rest, v, &CharStats::raceKills, cut);
+			else if (startsWith(k, P_CHAR_RACE_KOS, rest)) importVictim(rest, v, &CharStats::raceKOs, cut);
+			else if (startsWith(k, P_CHAR_FACTION_KILLS, rest)) importVictim(rest, v, &CharStats::factionKills, cut);
+			else if (startsWith(k, P_CHAR_FACTION_KOS, rest)) importVictim(rest, v, &CharStats::factionKOs, cut);
 		}
 		for (std::map<std::string, std::string>::const_iterator it = strs.begin(); it != strs.end(); ++it)
 		{

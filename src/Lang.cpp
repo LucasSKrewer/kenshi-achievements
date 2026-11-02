@@ -156,6 +156,9 @@ namespace Lang
 	// "SQUAD_TEMPLATE,Bugmaster,building name" e chega como "Mestre dos Insetos". Por isso vale
 	// qualquer entrada curta, com prioridade quando o mesmo texto traduzido vem de mais de uma:
 	//   2 = RACE/FACTION   1 = entrada de nome ("TIPO,Nome,")   0 = o resto (até 60 caracteres)
+	//
+	// O ru_RU não tem msgctxt: o contexto vem em comentários ("#. Type: FACTION", "#. Name: Dust Bandits").
+	// Por isso a entrada fecha em qualquer comentário, msgctxt ou msgid depois de um msgstr.
 	int loadGameNames(const std::string& poPath)
 	{
 		english.clear();
@@ -164,15 +167,19 @@ namespace Lang
 			return 0;
 
 		std::map<std::string, int> priorityOf; // tradução -> prioridade da entrada que a definiu
-		std::string line, ctx, id, str, *current = NULL;
+		std::string line, ctx, id, str, type, name, *current = NULL;
+		bool sawStr = false;
 		int n = 0;
 		for (bool more = true; more;)
 		{
 			more = (bool)std::getline(in, line);
 			line = trim(line);
-			bool startsEntry = !more || startsWith(line, "msgctxt");
-			if (startsEntry && !ctx.empty())
+			bool startsEntry = !more || startsWith(line, "msgctxt") || startsWith(line, "msgid")
+				|| (!line.empty() && line[0] == '#');
+			if (startsEntry && sawStr)
 			{
+				if (ctx.empty() && !type.empty() && !name.empty())
+					ctx = type + "," + name + ",";
 				// Fecha a entrada anterior
 				size_t comma = ctx.find(',');
 				bool isNameEntry = comma != std::string::npos && !id.empty()
@@ -202,11 +209,18 @@ namespace Lang
 				ctx.clear();
 				id.clear();
 				str.clear();
+				type.clear();
+				name.clear();
 				current = NULL;
+				sawStr = false;
 			}
 			if (!more)
 				break;
-			if (startsWith(line, "msgctxt"))
+			if (startsWith(line, "#. Type:"))
+				type = trim(line.substr(8));
+			else if (startsWith(line, "#. Name:"))
+				name = trim(line.substr(8));
+			else if (startsWith(line, "msgctxt"))
 			{
 				ctx = poString(line);
 				current = &ctx;
@@ -220,6 +234,7 @@ namespace Lang
 			{
 				str = poString(line);
 				current = &str;
+				sawStr = true;
 			}
 			else if (!line.empty() && line[0] == '"' && current)
 			{
@@ -233,5 +248,39 @@ namespace Lang
 	{
 		std::map<std::string, std::string>::const_iterator it = english.find(name);
 		return it == english.end() ? name : it->second;
+	}
+
+	std::string fromSave(const std::string& name, bool cut)
+	{
+		if (!cut)
+			return toEnglish(name);
+		// Letra UTF-8 incompleta no fim: volta até o byte inicial dela e confere se cabe inteira
+		std::string s = name;
+		for (bool trimmed = true; trimmed && !s.empty();)
+		{
+			size_t lead = s.size();
+			while (lead > 0 && ((unsigned char)s[lead - 1] & 0xC0) == 0x80)
+				--lead;
+			trimmed = false;
+			if (lead > 0)
+			{
+				unsigned char c = (unsigned char)s[lead - 1];
+				size_t need = c >= 0xF0 ? 4 : c >= 0xE0 ? 3 : c >= 0xC0 ? 2 : 1;
+				if (s.size() - (lead - 1) < need)
+				{
+					s.erase(lead - 1);
+					trimmed = true;
+				}
+			}
+		}
+		std::string found;
+		for (std::map<std::string, std::string>::const_iterator it = english.lower_bound(s);
+			it != english.end() && it->first.compare(0, s.size(), s) == 0; ++it)
+		{
+			if (!found.empty() && found != it->second)
+				return toEnglish(s); // mais de um nome começa assim: não chuta
+			found = it->second;
+		}
+		return found.empty() ? toEnglish(s) : found;
 	}
 }

@@ -57,6 +57,9 @@ int main(int argc, char** argv)
 	check(used == "pt_BR", "carregou lang/pt_BR.txt");
 	check(Lang::tr("tab.achievements", "?") == "Conquistas", "texto traduzido da aba");
 	check(Lang::tr("first_blood.title", "?") == "Primeiro Sangue", "título de conquista traduzido");
+	check(Lang::loadTexts(mod, "ru_RU") == "ru_RU", "carregou lang/ru_RU.txt (#39)");
+	check(Lang::tr("tab.achievements", "?") == "Достижения", "aba traduzida em russo");
+	check(Lang::tr("first_blood.title", "?") == "Первая кровь", "título de conquista em russo");
 	Lang::loadTexts(mod, "de_DE");
 	check(Lang::tr("tab.achievements", "?") == "Achievements", "idioma sem arquivo cai no inglês");
 	Lang::loadTexts(mod, "pt_BR");

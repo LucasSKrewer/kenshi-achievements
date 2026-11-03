@@ -2,7 +2,7 @@
 
 All notable changes to Kenshi Achievements. Versions follow [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [1.6.0] — 2026-11-03
 
 ### Added
 - Russian localization (`ru_RU`), including the interface, categories, and all 68 achievements

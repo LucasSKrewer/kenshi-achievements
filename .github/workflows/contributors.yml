@@ -1,4 +1,5 @@
-# Regenera assets/contributors.svg (painel de contribuidores do README) e commita se mudou.
+# Regenera o painel de contribuidores do README e publica no branch `contributors` (só a imagem, um
+# commit). Fora do main, o commit do robô não entra na lista de contribuidores do GitHub.
 name: Contribuidores
 
 on:
@@ -9,7 +10,6 @@ on:
     types: [opened, labeled, unlabeled, deleted]
   push:
     branches: [main]
-    paths-ignore: ['assets/contributors.svg']
 
 permissions:
   contents: write
@@ -27,18 +27,22 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - run: node .github/scripts/contributors.mjs
+      - run: node .github/scripts/contributors.mjs "$RUNNER_TEMP/contributors.svg"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Commita se mudou
+      - name: Publica no branch contributors se mudou
         run: |
-          git add assets/contributors.svg
-          if git diff --cached --quiet; then
+          if git fetch -q origin contributors 2>/dev/null \
+             && git show origin/contributors:contributors.svg > "$RUNNER_TEMP/old.svg" \
+             && cmp -s "$RUNNER_TEMP/old.svg" "$RUNNER_TEMP/contributors.svg"; then
             echo "Painel sem mudança."
             exit 0
           fi
+          git checkout -q --orphan panel
+          git rm -rfq .
+          cp "$RUNNER_TEMP/contributors.svg" contributors.svg
+          git add contributors.svg
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -m "Painel de contribuidores atualizado"
-          git pull --rebase origin main
-          git push origin HEAD:main
+          git commit -qm "Painel de contribuidores"
+          git push -qf origin panel:contributors

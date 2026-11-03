@@ -210,7 +210,7 @@ você, deixa uma ⭐: ajuda outras pessoas a achar o mod.
   nada disso existe.
 - Quem relatou bugs e sugeriu ideias, no GitHub e nos comentários da Workshop:
 
-  [![Contribuidores](assets/contributors.svg)](https://github.com/LucasSKrewer/kenshi-achievements/issues?q=is%3Aissue)
+  [![Contribuidores](https://raw.githubusercontent.com/LucasSKrewer/kenshi-achievements/contributors/contributors.svg)](https://github.com/LucasSKrewer/kenshi-achievements/issues?q=is%3Aissue)
 
   O painel se atualiza sozinho pelo GitHub (commits e issues). Quem contribuiu pela Workshop fica em
   [`.github/contributors.json`](.github/contributors.json).

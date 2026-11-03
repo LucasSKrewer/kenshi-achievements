@@ -19,8 +19,9 @@ Notas de quem mantém o mod. Pra jogar ou compilar, veja o [README](../README.pt
 
 - Capa da Workshop (1024×1024): `steam/gerar-capa.py <arte> steam/preview.jpg`.
 - Banner do README (1280×400): `python steam/gerar-banner.py steam/preview1.png assets/banner.jpg`.
-- Painel de contribuidores: `assets/contributors.svg`, gerado pelo workflow `contributors.yml`
-  (`.github/scripts/contributors.mjs`). Quem contribuiu pela Workshop entra em `.github/contributors.json`.
+- Painel de contribuidores: `contributors.svg` no branch `contributors`, gerado pelo workflow
+  `contributors.yml` (`.github/scripts/contributors.mjs`). Fica fora do `main` pra o commit do robô não
+  entrar na lista de contribuidores do GitHub. Quem contribuiu pela Workshop entra em `.github/contributors.json`.
 
 ## Validado no jogo
 

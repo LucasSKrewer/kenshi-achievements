@@ -217,7 +217,7 @@ GPLv3. If it's useful to you, leave a ⭐: it helps other people find the mod.
   of this possible.
 - Everyone who reported bugs and suggested features, on GitHub and in the Workshop comments:
 
-  [![Contributors](assets/contributors.svg)](https://github.com/LucasSKrewer/kenshi-achievements/issues?q=is%3Aissue)
+  [![Contributors](https://raw.githubusercontent.com/LucasSKrewer/kenshi-achievements/contributors/contributors.svg)](https://github.com/LucasSKrewer/kenshi-achievements/issues?q=is%3Aissue)
 
   The panel updates itself from GitHub (commits and issues). Workshop contributors are listed in
   [`.github/contributors.json`](.github/contributors.json).

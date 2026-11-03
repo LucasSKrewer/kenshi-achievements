@@ -1,14 +1,17 @@
-// Gera assets/contributors.svg pro README: o criador em cima, depois todo mundo que contribuiu, por quantidade.
+// Gera o contributors.svg do README: o criador em cima, depois todo mundo que contribuiu, por quantidade.
 // Conta commits e issues do GitHub (bug -> relato de bug, enhancement -> ideia, i18n -> tradução) e quem
-// contribuiu pela Workshop (.github/contributors.json). Roda no workflow contributors.yml; local:
-//   GITHUB_TOKEN=$(gh auth token) node .github/scripts/contributors.mjs
+// contribuiu pela Workshop (.github/contributors.json). O workflow contributors.yml publica a imagem no
+// branch `contributors` (commit fora do main não entra na lista de contribuidores do GitHub). Local:
+//   GITHUB_TOKEN=$(gh auth token) node .github/scripts/contributors.mjs [saída, padrão build/contributors.svg]
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const repo = process.env.GITHUB_REPOSITORY || 'LucasSKrewer/kenshi-achievements';
 const creator = 'LucasSKrewer';
 const excluded = new Set(['claude', 'github-actions[bot]', 'dependabot[bot]']);
 const root = new URL('../../', import.meta.url);
-const out = new URL('assets/contributors.svg', root);
+const out = resolve(process.argv[2] || resolve(fileURLToPath(root), 'build/contributors.svg'));
 const extra = JSON.parse(readFileSync(new URL('.github/contributors.json', root), 'utf8'));
 
 const headers = { Accept: 'application/vnd.github+json', 'User-Agent': 'contributors-panel' };
@@ -118,7 +121,7 @@ for (let i = 0; i < others.length; ++i) {
 
 const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" font-family="${font}">\n`
   + `${parts.join('\n')}\n</svg>\n`;
-mkdirSync(new URL('assets/', root), { recursive: true });
+mkdirSync(dirname(out), { recursive: true });
 writeFileSync(out, svg);
 console.log(`contributors.svg: ${others.length + (me ? 1 : 0)} people`);
 for (const p of [me, ...others].filter(Boolean)) console.log(`  ${p.name}: ${p === me ? 'creator' : subtitle(p)}`);

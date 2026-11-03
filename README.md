@@ -1,4 +1,11 @@
+[![Kenshi Achievements](assets/banner.jpg)](https://steamcommunity.com/sharedfiles/filedetails/?id=3809336824)
+
 # Kenshi Achievements
+
+[![Release](https://img.shields.io/github/v/release/LucasSKrewer/kenshi-achievements?label=release&color=d29922)](https://github.com/LucasSKrewer/kenshi-achievements/releases/latest)
+[![Steam Workshop](https://img.shields.io/badge/Steam-Workshop-1b2838?logo=steam)](https://steamcommunity.com/sharedfiles/filedetails/?id=3809336824)
+[![Requires RE_Kenshi](https://img.shields.io/badge/requires-RE__Kenshi%200.3.5%2B-8a8f98)](https://github.com/BFrizzleFoShizzle/RE_Kenshi/releases)
+[![License: GPLv3](https://img.shields.io/github/license/LucasSKrewer/kenshi-achievements?color=8a8f98)](LICENSE)
 
 **English** · [Português (Brasil)](README.pt-BR.md)
 
@@ -10,6 +17,10 @@ An [RE_Kenshi](https://github.com/BFrizzleFoShizzle/RE_Kenshi) plugin that count
 [Changelog](CHANGELOG.md) · [Issues](https://github.com/LucasSKrewer/kenshi-achievements/issues)
 
 ⭐ **Like it? Star the repository.** That's all I ask. Forks are welcome.
+
+**Contents:** [Features](#features) · [Installing](#installing) · [Customizing](#customizing) ·
+[Languages](#languages) · [How kills are credited](#how-kills-and-knockouts-are-credited) ·
+[Building](#building) · [Credits](#credits)
 
 ## Features
 
@@ -187,9 +198,12 @@ powershell -ExecutionPolicy Bypass -File tests\rodar-testes.ps1
 ```
 
 This builds `tests/teste_logica.cpp` with the same VC++ 2010 compiler. It tests:
-- the name dictionary and the per-language texts;
+- the name dictionary (including Russian, whose `gamedata.po` has no `msgctxt`) and the per-language texts;
 - counting, achievements and character merging;
 - the text of the panel tabs.
+
+Maintainer notes (publishing to the Workshop, what was checked in game), in Portuguese:
+[docs/manutencao.md](docs/manutencao.md).
 
 ## License
 

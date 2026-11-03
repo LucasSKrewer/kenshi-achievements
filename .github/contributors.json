@@ -1,0 +1,7 @@
+{
+  "_comment": "Quem contribuiu fora do GitHub (comentários da Workshop). bugs/ideas/translations = quantas contribuições de cada tipo. O resto vem sozinho do GitHub (commits e issues).",
+  "workshop": [
+    { "name": "Ne Variant", "ideas": 1 },
+    { "name": "Kiana", "bugs": 1 }
+  ]
+}

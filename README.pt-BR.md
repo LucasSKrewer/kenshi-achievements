@@ -132,5 +132,11 @@ Se for útil pra você, deixa uma ⭐ — ajuda outras pessoas a achar o mod.
 ## Créditos
 
 - [BFrizzleFoShizzle](https://github.com/BFrizzleFoShizzle) — RE_Kenshi e KenshiLib, sem os quais nada disso existe.
+- Quem relatou bugs e sugeriu ideias, no GitHub e nos comentários da Workshop:
+
+  [![Contribuidores](assets/contributors.svg)](https://github.com/LucasSKrewer/kenshi-achievements/issues?q=is%3Aissue)
+
+  O painel se atualiza sozinho pelo GitHub (commits e issues). Quem contribuiu pela Workshop fica em
+  [`.github/contributors.json`](.github/contributors.json).
 - Kenshi © Lo-Fi Games. Este projeto não inclui nenhum arquivo do jogo; o `achievement.wav` é sintetizado
   por `scripts/gerar-som.py`.

@@ -115,7 +115,7 @@ Never change an `id` after you've played with it: saves track unlocks by id.
 The mod follows the language you picked in Kenshi (`language=` in `settings.cfg`):
 
 - **The mod's own texts** come from `lang/<language>.txt` (e.g. `pt_BR.txt`), on top of `lang/en.txt`.
-  Included: English and Português (Brasil).
+  Included: English, Português (Brasil), and Русский (Russian).
 - **Race and faction names** arrive translated by the game ("Bandidos da Poeira"). The mod uses
   Kenshi's own dictionary (`locale/<language>/gamedata.po`) to map them back to English ("Dust Bandits").
   That's why `achievements.txt` is the same in every language.

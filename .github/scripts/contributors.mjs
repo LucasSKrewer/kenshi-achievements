@@ -67,13 +67,14 @@ const others = [...people.entries()].filter(([k]) => k !== creator.toLowerCase()
   .filter(p => total(p) > 0)
   .sort((a, b) => total(b) - total(a) || a.name.localeCompare(b.name));
 
-const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+// O que a pessoa fez, sem números (os commits de uma tradução não viram "Code")
+const word = (n, one, many) => (n === 1 ? one : many);
 function subtitle(p) {
   const parts = [];
-  if (p.translations) parts.push(p.translations === 1 ? 'translation' : plural(p.translations, '', 'translations'));
-  if (p.commits && p !== me) parts.push(plural(p.commits, 'commit', 'commits'));
-  if (p.ideas) parts.push(plural(p.ideas, 'idea', 'ideas'));
-  if (p.bugs) parts.push(plural(p.bugs, 'bug report', 'bug reports'));
+  if (p.translations) parts.push(word(p.translations, 'Translation', 'Translations'));
+  else if (p.commits) parts.push('Code');
+  if (p.ideas) parts.push(word(p.ideas, 'Idea', 'Ideas'));
+  if (p.bugs) parts.push(word(p.bugs, 'Bug report', 'Bug reports'));
   return parts.join(' · ');
 }
 

@@ -113,7 +113,7 @@ Nunca mude o `id` de uma conquista depois de jogar com ela: os saves guardam as 
 O mod segue o idioma escolhido no Kenshi (`language=` no `settings.cfg`):
 
 - **Os textos do próprio mod** vêm de `lang/<idioma>.txt` (ex.: `pt_BR.txt`), por cima do `lang/en.txt`.
-  Inclusos: inglês e português (Brasil).
+  Inclusos: inglês, português (Brasil) e russo (tradução de Phlegmatik Mirolybivy).
 - **Os nomes de raça e facção** chegam traduzidos pelo jogo ("Bandidos da Poeira"). O mod usa o dicionário
   do próprio Kenshi (`locale/<idioma>/gamedata.po`) pra voltar ao inglês ("Dust Bandits"). Por isso o
   `achievements.txt` é o mesmo em qualquer idioma.

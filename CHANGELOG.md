@@ -5,7 +5,9 @@ All notable changes to Kenshi Achievements. Versions follow [Semantic Versioning
 ## [Unreleased]
 
 ### Added
-- Russian localization (`ru_RU`), including the interface, categories, and all 68 achievements.
+- Russian localization (`ru_RU`), including the interface, categories, and all 68 achievements
+  ([#39](https://github.com/LucasSKrewer/kenshi-achievements/pull/39), by Phlegmatik Mirolybivy).
+
 ## [1.5.2] — 2026-11-01
 
 ### Fixed

@@ -107,7 +107,8 @@ async function card(p, x, y, role) {
 const parts = [];
 const rows = Math.ceil(others.length / PER_ROW);
 const H = 24 + ROW + rows * ROW + 8;
-if (me) parts.push(await card(me, (W - CARD) / 2, 16, `Creator · ${plural(me.commits, 'commit', 'commits')}`));
+// Sem a contagem de commits do criador: mudaria a cada push e o workflow commitaria toda vez
+if (me) parts.push(await card(me, (W - CARD) / 2, 16, 'Creator'));
 for (let i = 0; i < others.length; ++i) {
   const row = Math.floor(i / PER_ROW), inRow = Math.min(PER_ROW, others.length - row * PER_ROW);
   const x = (W - inRow * CARD) / 2 + (i % PER_ROW) * CARD;
